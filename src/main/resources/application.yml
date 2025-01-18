@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: Financial System
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://192.168.4.70:3306/FINANCIAL
+    username: root
+    password: Stonesour25!
+    hikari:
+      schema: "debts"
+
+vaadin:
+  launch-browser= true:
