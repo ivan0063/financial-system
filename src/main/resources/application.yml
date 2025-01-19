@@ -1,13 +1,20 @@
 spring:
   application:
     name: Financial System
+
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://192.168.4.70:3306/FINANCIAL
+    url: jdbc:mariadb://192.168.4.70:3306/financial?createDatabaseIfNotExist=true
     username: root
     password: Stonesour25!
-    hikari:
-      schema: "debts"
+
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
 
 vaadin:
   launch-browser= true:

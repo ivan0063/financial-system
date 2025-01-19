@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "USER")
+@Table(name = "USER", schema = "debts")
 public class User {
     @Id
     @Size(max = 100)

@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "CARD")
+@Table(name = "CARD", schema = "debts")
 public class Card {
     @Id
     @Size(max = 50)

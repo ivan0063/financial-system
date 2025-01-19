@@ -7,13 +7,14 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 
 @Getter
 @Setter
 @Entity
-@Table(name = "DEBT")
+@Table(name = "DEBT", schema = "debts")
 public class Debt {
     @Id
     @Size(max = 36)
@@ -21,6 +22,7 @@ public class Debt {
     private String debtId;
 
     @Column(name = "CREATED_AT")
+    @CreationTimestamp
     private Instant createdAt;
 
     @Size(max = 100)
