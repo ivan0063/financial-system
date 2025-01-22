@@ -25,10 +25,4 @@ public class Bank {
 
     @Column(name = "DISABLED")
     private Boolean disabled;
-
-    @NotNull
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bankCode")
-    @RestResource(path = "card", rel = "card")
-    private List<Card> cards;
-
 }

@@ -14,7 +14,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "DEBT", schema = "debts")
+@Table(name = "DEBT")
 public class Debt {
     @Id
     @Size(max = 36)
@@ -36,10 +36,13 @@ public class Debt {
     private Double debtPaid;
 
     @Column(name = "MONTHS_FINANCED")
-    private Double monthsFinanced;
+    private Integer monthsFinanced;
 
     @Column(name = "MONTHS_PAID")
-    private Double monthsPaid;
+    private Integer monthsPaid;
+
+    @Column(name = "MONTH_AMOUNT")
+    private Double monthAmount;
 
     @Column(name = "DISABLED")
     private Boolean disabled;

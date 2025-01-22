@@ -9,27 +9,26 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "FINANCIAL_PLAN")
-public class FinancialPlan {
+@Table(name = "BANK_LOAN")
+public class BankLoan {
     @Id
     @Size(max = 50)
-    @Column(name = "FINANCIAL_PLAN_CODE", nullable = false, length = 50)
-    private String financialPlanCode;
+    @Column(name = "LOAN_CODE", nullable = false, length = 50)
+    private String loanCode;
 
     @Size(max = 100)
     @Column(name = "DESCRIPTION", length = 100)
     private String description;
 
-    @NotNull
-    @Column(name = "MONTHS_FINANCED", nullable = false)
-    private Integer monthsFinanced;
+    @Column(name = "LOAN_DEBT")
+    private Double loanDebt;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "BANK_CODE", nullable = false)
     private Bank bankCode;
 
-    @Column(name = "ENABLED")
-    private Boolean enabled;
+    @Column(name = "DISABLED")
+    private Boolean disabled;
 
 }

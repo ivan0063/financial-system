@@ -9,8 +9,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "LOANS", schema = "debts")
-public class Loan {
+@Table(name = "PERSON_LOAN")
+public class PersonLoan {
     @Id
     @Size(max = 50)
     @Column(name = "LOAN_CODE", nullable = false, length = 50)
@@ -19,14 +19,6 @@ public class Loan {
     @Size(max = 100)
     @Column(name = "DESCRIPTION", length = 100)
     private String description;
-
-    @Column(name = "LOAN_DEBT")
-    private Double loanDebt;
-
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "BANK_CODE", nullable = false)
-    private Bank bankCode;
 
     @Column(name = "DISABLED")
     private Boolean disabled;

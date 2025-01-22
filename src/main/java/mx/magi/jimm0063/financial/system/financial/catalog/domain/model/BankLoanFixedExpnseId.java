@@ -14,7 +14,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @Embeddable
-public class LoanDebtId implements Serializable {
+public class BankLoanFixedExpnseId implements Serializable {
     private static final long serialVersionUID = 7584351864725179093L;
     @Size(max = 50)
     @NotNull
@@ -23,21 +23,21 @@ public class LoanDebtId implements Serializable {
 
     @Size(max = 36)
     @NotNull
-    @Column(name = "DEBT_ID", nullable = false, length = 36)
-    private String debtId;
+    @Column(name = "FIXED_EXPNSE_ID", nullable = false)
+    private String fixedExpenseId;
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
-        LoanDebtId entity = (LoanDebtId) o;
+        BankLoanFixedExpnseId entity = (BankLoanFixedExpnseId) o;
         return Objects.equals(this.loanCode, entity.loanCode) &&
-                Objects.equals(this.debtId, entity.debtId);
+                Objects.equals(this.fixedExpenseId, entity.fixedExpenseId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(loanCode, debtId);
+        return Objects.hash(loanCode, fixedExpenseId);
     }
 
 }

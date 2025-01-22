@@ -7,19 +7,18 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "LOAN_DEBT", schema = "debts")
-public class LoanDebt {
+@Table(name = "BANK_LOAN_FIXED_EXPENSE")
+public class BankLoanFixedExpense {
     @EmbeddedId
-    private LoanDebtId id;
+    private BankLoanFixedExpnseId id;
 
     @MapsId("loanCode")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "LOAN_CODE", nullable = false)
-    private Loan loanCode;
+    private BankLoan bankLoanCode;
 
-    @MapsId("debtId")
+    @MapsId("fixedExpenseId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "DEBT_ID", nullable = false)
-    private Debt debt;
-
+    @JoinColumn(name = "FIXED_EXPNSE_ID", nullable = false)
+    private FixedExpense fixedExpenseId;
 }
