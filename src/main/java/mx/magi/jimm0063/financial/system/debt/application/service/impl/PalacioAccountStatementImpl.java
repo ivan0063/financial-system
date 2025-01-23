@@ -12,7 +12,7 @@ import java.util.List;
 public class PalacioAccountStatementImpl implements AccountStatement {
 
     @Override
-    public List<DebtModel> extractDebt(File pdfFile) throws IOException {
+    public List<DebtModel> extractDebt(byte[] pdfFile) throws IOException {
         return List.of();
     }
 }

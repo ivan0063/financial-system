@@ -11,7 +11,7 @@ import java.util.List;
 @Service("LIVERPOOL")
 public class LiverpoolAccountStatementImpl implements AccountStatement {
     @Override
-    public List<DebtModel> extractDebt(File pdfFile) throws IOException {
+    public List<DebtModel> extractDebt(byte[] pdfFile) throws IOException {
         return List.of();
     }
 }

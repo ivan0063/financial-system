@@ -3,52 +3,71 @@ package mx.magi.jimm0063.financial.system.debt.application.service.impl;
 import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
 import mx.magi.jimm0063.financial.system.debt.application.service.AccountStatement;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service("UNIVERSAL")
 public class UniversalAccountStatementImpl implements AccountStatement {
     @Override
-    public List<DebtModel> extractDebt(File pdfFile) {
-        List<DebtModel> purchases = new ArrayList<>();
-        try (PDDocument document = Loader.loadPDF(pdfFile)) {
-            PDFTextStripper pdfStripper = new PDFTextStripper();
-            String text = pdfStripper.getText(document);
+    public List<DebtModel> extractDebt(byte[] pdfFile) {
+        List<DebtModel> debts = new ArrayList<>();
+        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(pdfFile))) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            String text = stripper.getText(document);
+            //String text = new String(stripper.getText(document).getBytes("ISO-8859-1"), "UTF-8");
 
-            // Encontrar el inicio y fin de la tabla
-            String tableStart = "COMPRAS Y CARGOS DIFERIDOS A MESES SIN INTERESES";
-            String tableEnd = "CARGOS,COMPRAS Y ABONOS REGULARES(NO A MESES)";
-            int startIndex = text.indexOf(tableStart);
-            int endIndex = text.indexOf(tableEnd);
+            // Regex para extraer: Fecha, Descripción, Monto Original, Pago Requerido, Núm. de Pago
+            Pattern pattern = Pattern.compile(
+                    "(\\d{2}-[A-Za-z]{3}-\\d{4})\\s+" + // Fecha (ej: 09-nov-2023)
+                            "(.+?)\\s+" + // Descripción (hasta encontrar el monto)
+                            "\\$(\\d{1,3}(?:,\\d{3})*\\.\\d{2})\\s+" + // Monto original (ej: $4,041.00)
+                            "\\$(\\d{1,3}(?:,\\d{3})*\\.\\d{2})\\s+" + // Saldo pendiente (ignorado)
+                            "\\$(\\d{1,3}(?:,\\d{3})*\\.\\d{2})\\s+" + // Pago requerido (ej: $225.00)
+                            "(\\d+\\s+de\\s+\\d+)" // Núm. de pago (ej: 15 de 18)
+            );
 
-            if (startIndex != -1 && endIndex != -1) {
-                String tableText = text.substring(startIndex, endIndex);
+            String[] lines = text.split("\\r?\\n");
+            boolean startParsing = false;
 
-                // Procesar cada línea de la tabla
-                String[] lines = tableText.split("\n");
-                for (String line : lines) {
-                    // Separar por columnas: Descripción, Pago requerido, Núm. de pago
-                    String[] columns = line.trim().split("\\s{2,}"); // Separador por espacios
-                    if (columns.length >= 4) {
-                        String description = columns[1]; // Columna de descripción
-                        String monthPayment = columns[2]; // Columna de pago requerido
-                        String paymentMonthStatus = columns[3]; // Columna de núm. de pago
+            for (String line : lines) {
+                if (line.contains("COMPRAS Y CARGOS DIFERIDOS A MESES SIN INTERESES")) {
+                    startParsing = true;
+                    continue;
+                }
 
-                        // Crear y agregar un objeto PurchaseMSI
-                        purchases.add(new DebtModel(description, monthPayment, paymentMonthStatus));
+                if (startParsing && (line.contains("---") || line.contains("CARGOS,COMPRAS Y ABONOS REGULARES"))) {
+                    break;
+                }
+
+                if (startParsing) {
+                    Matcher matcher = pattern.matcher(line.trim());
+                    if (matcher.find()) {
+                        String descripcion = matcher.group(2).trim();
+                        BigDecimal montoOriginal = parseMoney(matcher.group(3));
+                        BigDecimal pagoRequerido = parseMoney(matcher.group(5));
+                        String numeroPago = matcher.group(6).trim();
+
+                        debts.add(new DebtModel(descripcion, montoOriginal, pagoRequerido, numeroPago));
                     }
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error al procesar el archivo PDF: " + e.getMessage());
+            throw new RuntimeException(e);
         }
+        return debts;
+    }
 
-        return purchases;
+    private BigDecimal parseMoney(String value) {
+        return new BigDecimal(value.replace("$", "").replace(",", ""));
     }
 }

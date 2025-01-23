@@ -13,5 +13,5 @@ public interface AccountStatement {
      *
      * @return Debts encountered if there are not MSI debts it will return an empty list
      */
-    List<DebtModel> extractDebt(File pdfFile) throws IOException;
+    List<DebtModel> extractDebt(byte[] pdfFile) throws IOException;
 }

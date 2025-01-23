@@ -30,12 +30,12 @@ public class DebtManagementController {
                                                                       @RequestParam PdfExtractorTypes type) throws Exception {
         if(file.isEmpty()) throw new Exception("There is no valid file in the request");
 
-        File pdf = new File(Objects.requireNonNull(file.getOriginalFilename()));
-        pdf.createNewFile();
-        FileOutputStream fos = new FileOutputStream(pdf);
-        fos.write(file.getBytes());
-        fos.close();
-
+//        File pdf = new File(Objects.requireNonNull(file.getOriginalFilename()));
+//        pdf.createNewFile();
+//        FileOutputStream fos = new FileOutputStream(pdf);
+//        fos.write(file.getBytes());
+//        fos.close();
+        byte[] pdf = file.getBytes();
         AccountStatement accountStatement = accountStatementFactory.getStrategy(type);
         List<DebtModel> debtsExtracted = accountStatement.extractDebt(pdf);
 
