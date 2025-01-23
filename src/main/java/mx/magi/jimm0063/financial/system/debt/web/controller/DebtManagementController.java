@@ -4,9 +4,11 @@ import mx.magi.jimm0063.financial.system.debt.application.component.AccountState
 import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
 import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.debt.application.service.AccountStatement;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.model.Debt;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;

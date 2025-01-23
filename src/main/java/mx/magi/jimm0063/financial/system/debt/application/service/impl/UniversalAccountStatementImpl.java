@@ -1,11 +1,9 @@
 package mx.magi.jimm0063.financial.system.debt.application.service.impl;
 
 import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
-import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.debt.application.service.AccountStatement;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 
