@@ -1,7 +1,7 @@
 package mx.magi.jimm0063.financial.system.financial.catalog.domain.repository;
 
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.model.PersonLoanDebt;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.model.PersonLoanDebtId;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.PersonLoanDebt;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.PersonLoanDebtId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 

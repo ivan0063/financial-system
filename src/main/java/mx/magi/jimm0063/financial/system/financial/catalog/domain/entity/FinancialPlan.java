@@ -1,4 +1,4 @@
-package mx.magi.jimm0063.financial.system.financial.catalog.domain.model;
+package mx.magi.jimm0063.financial.system.financial.catalog.domain.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

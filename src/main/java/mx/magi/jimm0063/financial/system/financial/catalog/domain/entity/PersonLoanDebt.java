@@ -1,4 +1,4 @@
-package mx.magi.jimm0063.financial.system.financial.catalog.domain.model;
+package mx.magi.jimm0063.financial.system.financial.catalog.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -7,19 +7,18 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "CARD_DEBT")
-public class CardDebt {
+@Table(name = "PERSON_LOAN_DEBT")
+public class PersonLoanDebt {
     @EmbeddedId
-    private CardDebtId id;
+    private PersonLoanDebtId id;
 
-    @MapsId("cardCode")
+    @MapsId("loanCode")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "CARD_CODE", nullable = false)
-    private Card cardCode;
+    @JoinColumn(name = "LOAN_CODE", nullable = false)
+    private PersonLoan personLoanCode;
 
     @MapsId("debtId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "DEBT_ID", nullable = false)
     private Debt debt;
-
 }

@@ -1,4 +1,4 @@
-package mx.magi.jimm0063.financial.system.financial.catalog.domain.model;
+package mx.magi.jimm0063.financial.system.financial.catalog.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.Hibernate;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -15,6 +16,7 @@ import java.util.Objects;
 @Setter
 @Embeddable
 public class BankLoanFixedExpnseId implements Serializable {
+    @Serial
     private static final long serialVersionUID = 7584351864725179093L;
     @Size(max = 50)
     @NotNull

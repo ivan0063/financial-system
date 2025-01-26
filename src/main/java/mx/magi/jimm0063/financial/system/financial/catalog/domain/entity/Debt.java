@@ -1,4 +1,4 @@
-package mx.magi.jimm0063.financial.system.financial.catalog.domain.model;
+package mx.magi.jimm0063.financial.system.financial.catalog.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,8 +8,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SourceType;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -17,13 +18,13 @@ import java.time.Instant;
 @Table(name = "DEBT")
 public class Debt {
     @Id
-    @Size(max = 36)
-    @Column(name = "DEBT_ID", nullable = false, length = 36)
+    @Size(max = 150)
+    @Column(name = "DEBT_ID", nullable = false, length = 150)
     private String debtId;
 
     @Column(name = "CREATED_AT")
-    @CreationTimestamp
-    private Instant createdAt;
+    @CreationTimestamp(source = SourceType.DB)
+    private LocalDateTime createdAt;
 
     @Size(max = 100)
     @Column(name = "NAME", length = 100)
@@ -46,5 +47,4 @@ public class Debt {
 
     @Column(name = "DISABLED")
     private Boolean disabled;
-
 }

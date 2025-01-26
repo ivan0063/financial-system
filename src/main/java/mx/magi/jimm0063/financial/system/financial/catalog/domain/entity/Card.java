@@ -1,10 +1,13 @@
-package mx.magi.jimm0063.financial.system.financial.catalog.domain.model;
+package mx.magi.jimm0063.financial.system.financial.catalog.domain.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -23,6 +26,9 @@ public class Card {
     @Column(name = "CREDIT")
     private Double credit;
 
+    @Column(name = "FILE_TYPE")
+    private PdfExtractorTypes fileType;
+
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "BANK_CODE", nullable = false)
@@ -31,4 +37,6 @@ public class Card {
     @Column(name = "ENABLED")
     private Boolean enabled;
 
+    @OneToMany(mappedBy = "cardCode", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CardDebt> cardDebts;
 }

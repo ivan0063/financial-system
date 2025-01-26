@@ -7,11 +7,13 @@ spring:
     url: jdbc:mariadb://192.168.4.70:3306/financial?createDatabaseIfNotExist=true
     username: root
     password: Stonesour25!
+#    hikari:
+#      schema: finances
 
   jpa:
     show-sql: true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MariaDBDialect
