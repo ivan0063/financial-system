@@ -35,7 +35,7 @@ public class DebtManagementController {
         return ResponseEntity.ok(debtsExtracted);
     }
 
-    @PutMapping("/load/debts/{cardCode}")
+    @PostMapping("/load/debts/{cardCode}")
     public ResponseEntity<List<DebtModel>> loadDebts(@RequestParam("file") MultipartFile accountStatement,
                                                      @PathVariable String cardCode) throws IOException {
         if(accountStatement.isEmpty()) throw new RuntimeException("There is no valid file in the request");
@@ -45,7 +45,7 @@ public class DebtManagementController {
         return ResponseEntity.ok(loadedDebts);
     }
 
-    @PutMapping("/load/manual/debts/{cardCode}")
+    @PostMapping("/load/manual/debts/{cardCode}")
     public ResponseEntity<List<DebtModel>> loadDebts(@RequestBody List<DebtModel> manualDebts,
                                                      @PathVariable String cardCode) throws IOException {
         List<DebtModel> loadedDebts = this.dataBaseLoaderService.loadDebts(manualDebts, cardCode);
