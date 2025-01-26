@@ -25,3 +25,6 @@ spring:
 
 vaadin:
   launch-browser= true:
+management:
+  server:
+    port: 8888
