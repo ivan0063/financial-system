@@ -13,6 +13,7 @@ import lombok.Setter;
 public class FixedExpense {
     @Id
     @NotNull
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "FIXED_EXPNSE_ID")
     private String fixedExpenseId;
     @NotNull

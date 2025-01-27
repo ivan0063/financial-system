@@ -4,7 +4,7 @@ spring:
 
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://192.168.4.70:3306/financial?createDatabaseIfNotExist=true
+    url: jdbc:mariadb://192.168.4.70:3306/financial_dev?createDatabaseIfNotExist=true
     username: root
     password: Stonesour25!
 #    hikari:
@@ -25,6 +25,6 @@ spring:
 
 vaadin:
   launch-browser= true:
-management:
-  server:
-    port: 8888
+
+server:
+  port: 8888
