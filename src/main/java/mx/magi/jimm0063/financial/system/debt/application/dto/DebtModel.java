@@ -1,9 +1,11 @@
 package mx.magi.jimm0063.financial.system.debt.application.dto;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
 
+@Builder
 @Data
 public class DebtModel implements Serializable {
     private String name;

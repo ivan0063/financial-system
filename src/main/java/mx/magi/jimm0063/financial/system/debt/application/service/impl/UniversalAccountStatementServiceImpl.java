@@ -58,12 +58,21 @@ public class UniversalAccountStatementServiceImpl implements AccountStatementSer
                 if (startParsing) {
                     Matcher matcher = pattern.matcher(line.trim());
                     if (matcher.find()) {
-                        DebtModel debt = new DebtModel();
-                        debt.setName(matcher.group(2).trim());
-                        debt.setInitialDebtAmount(Double.parseDouble(matcher.group(3).replace(",", "")));
-                        debt.setMonthAmount(Double.parseDouble(matcher.group(5).replace(",", "")));
-                        debt.setMonthsPaid(Integer.parseInt(matcher.group(6)));
-                        debt.setMonthsFinanced(Integer.parseInt(matcher.group(7)));
+//                        DebtModel debt;
+//                        debt.setName(matcher.group(2).trim());
+//                        debt.setInitialDebtAmount(Double.parseDouble(matcher.group(3).replace(",", "")));
+//                        debt.setMonthAmount(Double.parseDouble(matcher.group(5).replace(",", "")));
+//                        debt.setMonthsPaid(Integer.parseInt(matcher.group(6)));
+//                        debt.setMonthsFinanced(Integer.parseInt(matcher.group(7)));
+//                        debt.setDebtPaid(debt.getMonthAmount() * debt.getMonthsPaid());
+
+                        DebtModel debt = DebtModel.builder()
+                                .initialDebtAmount(Double.parseDouble(matcher.group(3).replace(",", "")))
+                                .monthAmount(Double.parseDouble(matcher.group(5).replace(",", "")))
+                                .monthsFinanced(Integer.parseInt(matcher.group(7)))
+                                .monthsPaid(Integer.parseInt(matcher.group(6)))
+                                .name(matcher.group(2).trim())
+                                .build();
                         debt.setDebtPaid(debt.getMonthAmount() * debt.getMonthsPaid());
 
                         debts.add(debt);

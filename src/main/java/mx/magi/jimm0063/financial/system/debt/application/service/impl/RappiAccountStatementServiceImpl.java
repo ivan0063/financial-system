@@ -46,16 +46,22 @@ public class RappiAccountStatementServiceImpl implements AccountStatementService
                     // Match the line with the pattern
                     Matcher matcher = linePattern.matcher(line);
                     if (matcher.matches()) {
-                        DebtModel debtModel = new DebtModel();
+//                        DebtModel debtModel = new DebtModel();
+//                        debtModel.setName(matcher.group(2).trim());
+//                        debtModel.setInitialDebtAmount(Double.parseDouble(matcher.group(3).replace(",", "")));
+//                        debtModel.setDebtPaid(Double.parseDouble(matcher.group(4).replace(",", "")));
+//                        debtModel.setMonthsPaid(Integer.parseInt(matcher.group(6)));
+//                        debtModel.setMonthsFinanced(Integer.parseInt(matcher.group(7)));
+//                        debtModel.setMonthAmount(Double.parseDouble(matcher.group(8).replace(",", "")));
 
-                        debtModel.setName(matcher.group(2).trim());
-                        debtModel.setInitialDebtAmount(Double.parseDouble(matcher.group(3).replace(",", "")));
-                        debtModel.setDebtPaid(Double.parseDouble(matcher.group(4).replace(",", "")));
-                        debtModel.setMonthsPaid(Integer.parseInt(matcher.group(6)));
-                        debtModel.setMonthsFinanced(Integer.parseInt(matcher.group(7)));
-                        debtModel.setMonthAmount(Double.parseDouble(matcher.group(8).replace(",", "")));
-
-                        debtModels.add(debtModel);
+                        debtModels.add(DebtModel.builder()
+                                        .name(matcher.group(2).trim())
+                                        .initialDebtAmount(Double.parseDouble(matcher.group(3).replace(",", "")))
+                                        .monthAmount(Double.parseDouble(matcher.group(8).replace(",", "")))
+                                        .monthsFinanced(Integer.parseInt(matcher.group(7)))
+                                        .monthsPaid(Integer.parseInt(matcher.group(6)))
+                                        .debtPaid(Double.parseDouble(matcher.group(4).replace(",", "")))
+                                        .build());
                     }
                 }
             }

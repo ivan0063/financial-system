@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.status.application.dto.Debt2FinishModel;
 
 import java.io.Serializable;
 import java.util.List;
@@ -17,5 +18,6 @@ public class CardDebtStatus implements Serializable {
     private String cardName;
     private double credit;
     private double totalDebtAmount;
-    private List<DebtModel> almostCompletedDebts;
+    private List<Debt2FinishModel> almostCompletedDebts;
+    private List<DebtModel> cardDebts;
 }

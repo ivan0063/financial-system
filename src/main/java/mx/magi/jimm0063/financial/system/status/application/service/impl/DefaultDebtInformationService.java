@@ -1,12 +1,8 @@
 package mx.magi.jimm0063.financial.system.status.application.service.impl;
 
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.Debt;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.FinancialStatus;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.FixedExpense;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.CardDebtRepository;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.DebtRepository;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.FinancialStatusRepository;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.FixedExpenseRepository;
+import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.*;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.*;
 import mx.magi.jimm0063.financial.system.status.application.dto.Debt2FinishModel;
 import mx.magi.jimm0063.financial.system.status.application.dto.FixedExpenseModel;
 import mx.magi.jimm0063.financial.system.status.application.service.DebtInformationService;
@@ -18,12 +14,14 @@ import java.util.List;
 
 @Service
 public class DefaultDebtInformationService implements DebtInformationService {
+    private final CardRepository cardRepository;
     private final CardDebtRepository cardDebtRepository;
     private final FinancialStatusRepository financialStatusRepository;
     private final FixedExpenseRepository fixedExpenseRepository;
     private final DebtRepository debtRepository;
 
-    public DefaultDebtInformationService(FinancialStatusRepository financialStatusRepository, CardDebtRepository cardDebtRepository, FixedExpenseRepository fixedExpenseRepository, DebtRepository debtRepository) {
+    public DefaultDebtInformationService(CardRepository cardRepository, FinancialStatusRepository financialStatusRepository, CardDebtRepository cardDebtRepository, FixedExpenseRepository fixedExpenseRepository, DebtRepository debtRepository) {
+        this.cardRepository = cardRepository;
         this.financialStatusRepository = financialStatusRepository;
         this.cardDebtRepository = cardDebtRepository;
         this.fixedExpenseRepository = fixedExpenseRepository;
@@ -38,38 +36,28 @@ public class DefaultDebtInformationService implements DebtInformationService {
         List<Debt> debts = debtRepository.findAll();
         List<FixedExpense> fixedExpenses = fixedExpenseRepository.findAll();
 
-        double fixedExpensesMonthAmount = fixedExpenses.stream()
+        double fixedExpensesMonthAmount = fixedExpenses.parallelStream()
                 .mapToDouble(FixedExpense::getCostAmount)
                 .sum();
 
         double debtMonthAmount = debts
-                .stream()
+                .parallelStream()
                 .mapToDouble(Debt::getMonthAmount)
                 .sum();
 
+        List<FixedExpenseModel> fixedExpensesList = fixedExpenses.parallelStream()
+                .map(fixedExpense -> FixedExpenseModel.builder()
+                        .costAmount(fixedExpense.getCostAmount())
+                        .name(fixedExpense.getName())
+                        .build())
+                .toList();
+
         double globalDebtAmount = debts
-                .stream()
+                .parallelStream()
                 .mapToDouble(Debt::getDebtPaid)
                 .sum();
 
-        List<Debt2FinishModel> almostCompletedDebts = debts.stream()
-                .filter(debt -> debt.getMonthsPaid() + 1 == debt.getMonthsFinanced())
-                .map(debt -> {
-                    Debt2FinishModel debt2FinishModel = Debt2FinishModel.builder()
-                            .monthAmount(debt.getMonthAmount())
-                            .name(debt.getName())
-                            .build();
-                    debt2FinishModel.creteCurrentInstallment(debt.getMonthsFinanced(), debt.getMonthsPaid());
-                    return debt2FinishModel;
-                })
-                .toList();
-
-        List<FixedExpenseModel> fixedExpensesList = fixedExpenses.stream()
-                .map(fixedExpense -> FixedExpenseModel.builder()
-                            .costAmount(fixedExpense.getCostAmount())
-                            .name(fixedExpense.getName())
-                            .build())
-                .toList();
+        List<Debt2FinishModel> almostCompletedDebts = getAlmostComplitedDebts(debts);
 
         return GlobalDebtStatus.builder()
                 .fixedExpenses(fixedExpensesList)
@@ -85,6 +73,58 @@ public class DefaultDebtInformationService implements DebtInformationService {
 
     @Override
     public CardDebtStatus debtCardStatus(String cardCode) {
-        return null;
+        Card card = cardRepository.findById(cardCode)
+                .orElseThrow(() -> new RuntimeException("Card not found: " + cardCode));
+
+        List<Debt> debts = card.getCardDebts()
+                .parallelStream()
+                .map(CardDebt::getDebt)
+                .toList();
+        List<Debt2FinishModel> almostCompletedDebts = getAlmostComplitedDebts(debts);
+
+        double monthAmountPayemnt = debts.parallelStream()
+                .mapToDouble(debt -> debt.getMonthAmount())
+                .sum();
+
+        Double totalDebtAmount = debts.parallelStream()
+                .mapToDouble(debt -> debt.getInitialDebtAmount() - debt.getDebtPaid())
+                .sum();
+
+        double availableCredit = card.getCredit() - totalDebtAmount;
+
+        List<DebtModel> cardDebts = debts.parallelStream()
+                .map(debt -> DebtModel.builder()
+                            .debtPaid(debt.getDebtPaid())
+                            .initialDebtAmount(debt.getInitialDebtAmount())
+                            .monthAmount(debt.getMonthAmount())
+                            .monthsFinanced(debt.getMonthsFinanced())
+                            .monthsPaid(debt.getMonthsPaid())
+                            .name(debt.getName())
+                            .build())
+                .toList();
+
+        return CardDebtStatus.builder()
+                .almostCompletedDebts(almostCompletedDebts)
+                .availableCredit(availableCredit)
+                .cardName(card.getCardName())
+                .credit(card.getCredit())
+                .monthAmountPayment(monthAmountPayemnt)
+                .totalDebtAmount(totalDebtAmount)
+                .cardDebts(cardDebts)
+                .build();
+    }
+
+    private List<Debt2FinishModel> getAlmostComplitedDebts(List<Debt> debts) {
+        return debts.parallelStream()
+                .filter(debt -> debt.getMonthsPaid() + 1 == debt.getMonthsFinanced())
+                .map(debt -> {
+                    Debt2FinishModel debt2FinishModel = Debt2FinishModel.builder()
+                            .monthAmount(debt.getMonthAmount())
+                            .name(debt.getName())
+                            .build();
+                    debt2FinishModel.creteCurrentInstallment(debt.getMonthsFinanced(), debt.getMonthsPaid());
+                    return debt2FinishModel;
+                })
+                .toList();
     }
 }
