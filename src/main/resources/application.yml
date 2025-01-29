@@ -3,12 +3,12 @@ spring:
     name: Financial System
 
   datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://192.168.4.70:3306/financial_dev?createDatabaseIfNotExist=true
-    username: root
-    password: Stonesour25!
-#    hikari:
-#      schema: finances
+    driver-class-name: ${SPRING_DB_DRIVE}
+    url: ${SPRING_DB_URL}
+    username: ${SPRING_DB_USER}
+    password: ${SPRING_DB_PASSWORD}
+    hikari:
+      schema: ${SPRING_DB_SCHEMA}
 
   jpa:
     show-sql: true
@@ -23,8 +23,8 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
 
-vaadin:
-  launch-browser= true:
+#vaadin:
+#  launch-browser= true:
 
 server:
   port: 8888
