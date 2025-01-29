@@ -32,3 +32,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### File to ignore variables
+.env
