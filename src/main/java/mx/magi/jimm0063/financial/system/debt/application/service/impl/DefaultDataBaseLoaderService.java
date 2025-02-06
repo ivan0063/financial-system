@@ -42,13 +42,19 @@ public class DefaultDataBaseLoaderService implements DataBaseLoaderService {
         PdfExtractorTypes pdfType = card.getFileType();
 
         List<DebtModel> accountStatementDebts = this.accountStatementFactory.getStrategy(pdfType)
-                .extractDebt(accountStatement);
+                .extractDebt(accountStatement)
+                .stream()
+                .filter(debt -> debt.getMonthsFinanced() > debt.getMonthsPaid())
+                .toList();
 
         return this.saveDebts(accountStatementDebts, card);
     }
 
     @Override
     public List<DebtModel> loadDebts(List<DebtModel> debtModels, String cardCode) {
+        debtModels = debtModels.stream()
+                .filter(debt -> debt.getMonthsFinanced() > debt.getMonthsPaid())
+                .toList();
         Card card = this.findCardByCode(cardCode);
         return this.saveDebts(debtModels, card);
     }

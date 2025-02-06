@@ -11,7 +11,7 @@ spring:
       schema: ${SPRING_DB_SCHEMA}
 
   jpa:
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: validate
     properties:
