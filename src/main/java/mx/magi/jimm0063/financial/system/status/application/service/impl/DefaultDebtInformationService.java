@@ -36,16 +36,16 @@ public class DefaultDebtInformationService implements DebtInformationService {
         List<Debt> debts = debtRepository.findAll();
         List<FixedExpense> fixedExpenses = fixedExpenseRepository.findAll();
 
-        double fixedExpensesMonthAmount = fixedExpenses.parallelStream()
+        double fixedExpensesMonthAmount = fixedExpenses.stream()
                 .mapToDouble(FixedExpense::getCostAmount)
                 .sum();
 
         double debtMonthAmount = debts
-                .parallelStream()
+                .stream()
                 .mapToDouble(Debt::getMonthAmount)
                 .sum();
 
-        List<FixedExpenseModel> fixedExpensesList = fixedExpenses.parallelStream()
+        List<FixedExpenseModel> fixedExpensesList = fixedExpenses.stream()
                 .map(fixedExpense -> FixedExpenseModel.builder()
                         .costAmount(fixedExpense.getCostAmount())
                         .name(fixedExpense.getName())
@@ -53,7 +53,7 @@ public class DefaultDebtInformationService implements DebtInformationService {
                 .toList();
 
         double globalDebtAmount = debts
-                .parallelStream()
+                .stream()
                 .mapToDouble(Debt::getDebtPaid)
                 .sum();
 
@@ -77,22 +77,22 @@ public class DefaultDebtInformationService implements DebtInformationService {
                 .orElseThrow(() -> new RuntimeException("Card not found: " + cardCode));
 
         List<Debt> debts = card.getCardDebts()
-                .parallelStream()
+                .stream()
                 .map(CardDebt::getDebt)
                 .toList();
         List<Debt2FinishModel> almostCompletedDebts = getAlmostComplitedDebts(debts);
 
-        double monthAmountPayemnt = debts.parallelStream()
+        double monthAmountPayemnt = debts.stream()
                 .mapToDouble(debt -> debt.getMonthAmount())
                 .sum();
 
-        Double totalDebtAmount = debts.parallelStream()
+        Double totalDebtAmount = debts.stream()
                 .mapToDouble(debt -> debt.getInitialDebtAmount() - debt.getDebtPaid())
                 .sum();
 
         double availableCredit = card.getCredit() - totalDebtAmount;
 
-        List<DebtModel> cardDebts = debts.parallelStream()
+        List<DebtModel> cardDebts = debts.stream()
                 .map(debt -> DebtModel.builder()
                             .debtPaid(debt.getDebtPaid())
                             .initialDebtAmount(debt.getInitialDebtAmount())
@@ -115,7 +115,7 @@ public class DefaultDebtInformationService implements DebtInformationService {
     }
 
     private List<Debt2FinishModel> getAlmostComplitedDebts(List<Debt> debts) {
-        return debts.parallelStream()
+        return debts.stream()
                 .filter(debt -> debt.getMonthsPaid() + 1 == debt.getMonthsFinanced())
                 .map(debt -> {
                     Debt2FinishModel debt2FinishModel = Debt2FinishModel.builder()
