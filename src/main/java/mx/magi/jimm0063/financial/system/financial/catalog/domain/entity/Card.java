@@ -26,7 +26,8 @@ public class Card {
     @Column(name = "CREDIT")
     private Double credit;
 
-    @Column(name = "FILE_TYPE")
+    @Enumerated(value = EnumType.STRING)
+    @Column(name = "FILE_TYPE", columnDefinition = "varchar(100)")
     private PdfExtractorTypes fileType;
 
     @NotNull
