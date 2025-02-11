@@ -15,6 +15,7 @@ import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.Deb
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,6 +41,8 @@ public class DefaultDataBaseLoaderService implements DataBaseLoaderService {
     public List<DebtModel> loadDebtFromAccountStatement(byte[] accountStatement, String cardCode) throws IOException {
         Card card = this.findCardByCode(cardCode);
         PdfExtractorTypes pdfType = card.getFileType();
+
+        if(PdfExtractorTypes.MANUAL.equals(pdfType)) return new ArrayList<>();
 
         List<DebtModel> accountStatementDebts = this.accountStatementFactory.getStrategy(pdfType)
                 .extractDebt(accountStatement)
