@@ -18,7 +18,7 @@ public class CardDebt {
     private Card cardCode;
 
     @MapsId("debtId")
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "DEBT_ID", nullable = false)
     private Debt debt;
 }

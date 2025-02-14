@@ -1,4 +1,4 @@
-package mx.magi.jimm0063.financial.system.financial.catalog.infrastructure.config;
+package mx.magi.jimm0063.financial.system.global.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

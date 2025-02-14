@@ -8,6 +8,7 @@ import java.io.Serializable;
 @Builder
 @Data
 public class DebtModel implements Serializable {
+    private String debtId;
     private String name;
     private Double initialDebtAmount;
     private Double debtPaid;

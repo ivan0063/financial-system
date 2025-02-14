@@ -94,6 +94,7 @@ public class DefaultDebtInformationService implements DebtInformationService {
 
         List<DebtModel> cardDebts = debts.stream()
                 .map(debt -> DebtModel.builder()
+                            .debtId(debt.getDebtId())
                             .debtPaid(debt.getDebtPaid())
                             .initialDebtAmount(debt.getInitialDebtAmount())
                             .monthAmount(debt.getMonthAmount())
@@ -104,6 +105,7 @@ public class DefaultDebtInformationService implements DebtInformationService {
                 .toList();
 
         return CardDebtStatus.builder()
+                .accountStatementType(card.getFileType())
                 .almostCompletedDebts(almostCompletedDebts)
                 .availableCredit(availableCredit)
                 .cardName(card.getCardName())
