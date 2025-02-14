@@ -2,9 +2,11 @@ package mx.magi.jimm0063.financial.system.debt.web.controller;
 
 import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
 import mx.magi.jimm0063.financial.system.debt.application.service.DebtService;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.Debt;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/debt")
