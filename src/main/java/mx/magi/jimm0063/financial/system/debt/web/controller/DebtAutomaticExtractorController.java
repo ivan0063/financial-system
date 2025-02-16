@@ -2,6 +2,7 @@ package mx.magi.jimm0063.financial.system.debt.web.controller;
 
 import mx.magi.jimm0063.financial.system.debt.application.component.AccountStatementFactory;
 import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.debt.application.dto.ManualDebtRequest;
 import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.debt.application.service.AccountStatementService;
 import mx.magi.jimm0063.financial.system.debt.application.service.DataBaseLoaderService;
@@ -46,9 +47,9 @@ public class DebtAutomaticExtractorController {
     }
 
     @PostMapping("/load/manual/debts/{cardCode}")
-    public ResponseEntity<List<DebtModel>> loadDebts(@RequestBody List<DebtModel> manualDebts,
+    public ResponseEntity<List<DebtModel>> loadDebts(@RequestBody ManualDebtRequest manualDebts,
                                                      @PathVariable String cardCode) throws IOException {
-        List<DebtModel> loadedDebts = this.dataBaseLoaderService.loadDebts(manualDebts, cardCode);
+        List<DebtModel> loadedDebts = this.dataBaseLoaderService.loadDebts(manualDebts.getDebts(), cardCode);
 
         return ResponseEntity.ok(loadedDebts);
     }
