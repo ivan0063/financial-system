@@ -41,7 +41,6 @@ public class DefualtPaymentService implements PaymentService {
         CardPayment cardPayment = new CardPayment();
         cardPayment.setCard(card);
         cardPayment = this.cardPaymentRepository.save(cardPayment);
-        PaymentResponse paymentResponse = modelMapper.map(cardPayment, PaymentResponse.class);
 
          // Getting Debts to update
         List<Debt> debts =  card.getCardDebts().stream()
@@ -50,6 +49,7 @@ public class DefualtPaymentService implements PaymentService {
                 .toList();
 
         List<DebtPaymentResponse> debtPayments = new ArrayList<>();
+        Double monthAmountUpdated = 0.0;
         for (Debt debt : debts) {
             DebtPayment debtPayment = new DebtPayment();
             debtPayment.setPrevDebtPaid(debt.getDebtPaid());
@@ -65,8 +65,13 @@ public class DefualtPaymentService implements PaymentService {
 
             if(Objects.equals(debt.getMonthsFinanced(), debt.getMonthsPaid())) debt.setDisabled(true);
 
-            debtRepository.save(debt);
+            debt = debtRepository.save(debt);
+            monthAmountUpdated += debt.getMonthAmount();
         }
+
+        cardPayment.setMonthAmountUpdated(monthAmountUpdated);
+        cardPayment = this.cardPaymentRepository.save(cardPayment);
+        PaymentResponse paymentResponse = modelMapper.map(cardPayment, PaymentResponse.class);
         paymentResponse.setDebtPayments(debtPayments);
 
         return paymentResponse;
