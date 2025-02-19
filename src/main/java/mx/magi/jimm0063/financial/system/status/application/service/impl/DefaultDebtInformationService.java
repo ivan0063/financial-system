@@ -79,6 +79,7 @@ public class DefaultDebtInformationService implements DebtInformationService {
         List<Debt> debts = card.getCardDebts()
                 .stream()
                 .map(CardDebt::getDebt)
+                .filter(debt -> debt.getDisabled() == false)
                 .toList();
         List<Debt2FinishModel> almostCompletedDebts = getAlmostComplitedDebts(debts);
 
@@ -118,6 +119,7 @@ public class DefaultDebtInformationService implements DebtInformationService {
 
     private List<Debt2FinishModel> getAlmostComplitedDebts(List<Debt> debts) {
         return debts.stream()
+                .filter(debt -> debt.getDisabled() == false)
                 .filter(debt -> debt.getMonthsPaid() + 1 == debt.getMonthsFinanced())
                 .map(debt -> {
                     Debt2FinishModel debt2FinishModel = Debt2FinishModel.builder()

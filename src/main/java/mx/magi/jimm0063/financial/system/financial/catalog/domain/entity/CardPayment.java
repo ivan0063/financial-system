@@ -1,6 +1,7 @@
 package mx.magi.jimm0063.financial.system.financial.catalog.domain.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,4 +21,9 @@ public class CardPayment {
     @CreationTimestamp
     @Column(name = "CREATED_AT")
     private LocalDateTime createdAt;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "CARD_CODE", nullable = false)
+    private Card card;
 }
