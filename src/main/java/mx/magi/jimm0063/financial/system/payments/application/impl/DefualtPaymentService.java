@@ -64,9 +64,9 @@ public class DefualtPaymentService implements PaymentService {
             debt.setMonthsPaid(debt.getMonthsPaid() + 1);
 
             if(Objects.equals(debt.getMonthsFinanced(), debt.getMonthsPaid())) debt.setDisabled(true);
-
             debt = debtRepository.save(debt);
-            monthAmountUpdated += debt.getMonthAmount();
+
+            if(!debt.getDisabled()) monthAmountUpdated += debt.getMonthAmount();
         }
 
         cardPayment.setMonthAmountUpdated(monthAmountUpdated);
