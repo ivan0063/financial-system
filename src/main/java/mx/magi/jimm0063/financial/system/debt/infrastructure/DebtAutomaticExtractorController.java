@@ -1,11 +1,11 @@
-package mx.magi.jimm0063.financial.system.debt.web.controller;
+package mx.magi.jimm0063.financial.system.debt.infrastructure;
 
 import mx.magi.jimm0063.financial.system.debt.application.component.AccountStatementFactory;
-import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
-import mx.magi.jimm0063.financial.system.debt.application.dto.ManualDebtRequest;
-import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.debt.application.service.AccountStatementService;
 import mx.magi.jimm0063.financial.system.debt.application.service.DataBaseLoaderService;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.ManualDebtRequest;
+import mx.magi.jimm0063.financial.system.debt.domain.enums.PdfExtractorTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

@@ -2,9 +2,9 @@ package mx.magi.jimm0063.financial.system.debt.application.service.impl;
 
 import mx.magi.jimm0063.financial.system.debt.application.component.AccountStatementFactory;
 import mx.magi.jimm0063.financial.system.debt.application.component.DebtHashComponent;
-import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
-import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.debt.application.service.DataBaseLoaderService;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.debt.domain.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.Card;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.CardDebt;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.CardDebtId;

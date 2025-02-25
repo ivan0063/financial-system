@@ -1,6 +1,6 @@
 package mx.magi.jimm0063.financial.system.debt.application.service;
 
-import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
 
 import java.io.IOException;
 import java.util.List;

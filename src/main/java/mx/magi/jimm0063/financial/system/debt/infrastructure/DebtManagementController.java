@@ -1,7 +1,7 @@
-package mx.magi.jimm0063.financial.system.debt.web.controller;
+package mx.magi.jimm0063.financial.system.debt.infrastructure;
 
-import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
 import mx.magi.jimm0063.financial.system.debt.application.service.DebtService;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

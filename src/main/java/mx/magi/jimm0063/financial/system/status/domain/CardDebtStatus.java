@@ -3,8 +3,8 @@ package mx.magi.jimm0063.financial.system.status.domain;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
-import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.debt.domain.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.status.application.dto.Debt2FinishModel;
 
 import java.io.Serializable;

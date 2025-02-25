@@ -1,7 +1,7 @@
 package mx.magi.jimm0063.financial.system.debt.application.component;
 
-import mx.magi.jimm0063.financial.system.debt.application.enums.PdfExtractorTypes;
 import mx.magi.jimm0063.financial.system.debt.application.service.AccountStatementService;
+import mx.magi.jimm0063.financial.system.debt.domain.enums.PdfExtractorTypes;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;

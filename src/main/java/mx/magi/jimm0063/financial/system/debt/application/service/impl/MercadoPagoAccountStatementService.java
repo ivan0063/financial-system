@@ -1,7 +1,7 @@
 package mx.magi.jimm0063.financial.system.debt.application.service.impl;
 
-import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
 import mx.magi.jimm0063.financial.system.debt.application.service.AccountStatementService;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;

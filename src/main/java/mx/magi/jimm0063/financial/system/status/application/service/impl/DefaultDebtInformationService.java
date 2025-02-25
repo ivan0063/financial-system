@@ -1,6 +1,6 @@
 package mx.magi.jimm0063.financial.system.status.application.service.impl;
 
-import mx.magi.jimm0063.financial.system.debt.application.dto.DebtModel;
+import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.*;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.*;
 import mx.magi.jimm0063.financial.system.status.application.dto.Debt2FinishModel;
