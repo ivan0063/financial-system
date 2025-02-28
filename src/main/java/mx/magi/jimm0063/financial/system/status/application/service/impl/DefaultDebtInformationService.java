@@ -33,8 +33,8 @@ public class DefaultDebtInformationService implements DebtInformationService {
         FinancialStatus userFinancialStatus = financialStatusRepository.findByUser_Email(email)
                 .orElseThrow(() -> new RuntimeException("No financial status found for email: " + email));
 
-        List<Debt> debts = debtRepository.findAll();
-        List<FixedExpense> fixedExpenses = fixedExpenseRepository.findAll();
+        List<Debt> debts = debtRepository.findAllByDisabledFalse();
+        List<FixedExpense> fixedExpenses = fixedExpenseRepository.findAllByFinalizedFalse();
 
         double fixedExpensesMonthAmount = fixedExpenses.stream()
                 .mapToDouble(FixedExpense::getCostAmount)

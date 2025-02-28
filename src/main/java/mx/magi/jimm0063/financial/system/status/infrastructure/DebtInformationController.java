@@ -1,4 +1,4 @@
-package mx.magi.jimm0063.financial.system.status.web;
+package mx.magi.jimm0063.financial.system.status.infrastructure;
 
 import mx.magi.jimm0063.financial.system.status.application.service.DebtInformationService;
 import mx.magi.jimm0063.financial.system.status.domain.CardDebtStatus;
