@@ -50,7 +50,13 @@ public class DebtAutomaticExtractorController {
     public ResponseEntity<List<DebtModel>> loadDebts(@RequestBody ManualDebtRequest manualDebts,
                                                      @PathVariable String cardCode) throws IOException {
         List<DebtModel> loadedDebts = this.dataBaseLoaderService.loadDebts(manualDebts.getDebts(), cardCode);
-
         return ResponseEntity.ok(loadedDebts);
+    }
+
+    @PostMapping("/load/report/debts")
+    public ResponseEntity<?> loadDebtsFromXML(@RequestParam("file") MultipartFile debtsFile) {
+        if(debtsFile.isEmpty()) throw new RuntimeException("There is no valid file in the request");
+
+        return ResponseEntity.ok(this.dataBaseLoaderService.importDebtsFromCSV(debtsFile));
     }
 }

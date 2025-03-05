@@ -11,19 +11,26 @@ import mx.magi.jimm0063.financial.system.status.domain.GlobalDebtStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+
+import static mx.magi.jimm0063.financial.system.debt.domain.enums.PdfExtractorTypes.MANUAL;
 
 @Service
 public class DefaultDebtInformationService implements DebtInformationService {
     private final CardRepository cardRepository;
-    private final CardDebtRepository cardDebtRepository;
+    private final PersonLoanRepository personLoanRepository;
     private final FinancialStatusRepository financialStatusRepository;
     private final FixedExpenseRepository fixedExpenseRepository;
     private final DebtRepository debtRepository;
 
-    public DefaultDebtInformationService(CardRepository cardRepository, FinancialStatusRepository financialStatusRepository, CardDebtRepository cardDebtRepository, FixedExpenseRepository fixedExpenseRepository, DebtRepository debtRepository) {
+    public DefaultDebtInformationService(CardRepository cardRepository,
+                                         PersonLoanRepository personLoanRepository,
+                                         FinancialStatusRepository financialStatusRepository,
+                                         FixedExpenseRepository fixedExpenseRepository,
+                                         DebtRepository debtRepository) {
         this.cardRepository = cardRepository;
+        this.personLoanRepository = personLoanRepository;
         this.financialStatusRepository = financialStatusRepository;
-        this.cardDebtRepository = cardDebtRepository;
         this.fixedExpenseRepository = fixedExpenseRepository;
         this.debtRepository = debtRepository;
     }
@@ -57,7 +64,7 @@ public class DefaultDebtInformationService implements DebtInformationService {
                 .mapToDouble(Debt::getDebtPaid)
                 .sum();
 
-        List<Debt2FinishModel> almostCompletedDebts = getAlmostComplitedDebts(debts);
+        List<Debt2FinishModel> almostCompletedDebts = getAlmostCompletedDebts(debts);
 
         return GlobalDebtStatus.builder()
                 .fixedExpenses(fixedExpensesList)
@@ -72,19 +79,45 @@ public class DefaultDebtInformationService implements DebtInformationService {
     }
 
     @Override
-    public CardDebtStatus debtCardStatus(String cardCode) {
-        Card card = cardRepository.findById(cardCode)
-                .orElseThrow(() -> new RuntimeException("Card not found: " + cardCode));
+    public CardDebtStatus debtEntityStatus(String entityId) {
+        Optional<Card> cardOptional = cardRepository.findById(entityId);
+        Optional<PersonLoan> personLoanOptional = personLoanRepository.findById(entityId);
+        List<Debt> debts;
+        CardDebtStatus cardDebtStatus = null;
 
-        List<Debt> debts = card.getCardDebts()
-                .stream()
-                .map(CardDebt::getDebt)
-                .filter(debt -> debt.getDisabled() == false)
-                .toList();
-        List<Debt2FinishModel> almostCompletedDebts = getAlmostComplitedDebts(debts);
+        if (cardOptional.isPresent()) {
+            Card card = cardRepository.findById(entityId)
+                    .orElseThrow(() -> new RuntimeException("Card not found: " + entityId));
+
+            debts = card.getCardDebts()
+                    .stream()
+                    .map(CardDebt::getDebt)
+                    .filter(debt -> debt.getDisabled() == false)
+                    .toList();
+
+            cardDebtStatus = this.getCardDebtStatus(card, debts);
+        }
+
+        if (personLoanOptional.isPresent()) {
+            PersonLoan personLoan = personLoanOptional.get();
+
+            debts = personLoan.getPersonLoanDebts()
+                    .stream()
+                    .map(PersonLoanDebt::getDebt)
+                    .filter(debt -> debt.getDisabled() == false)
+                    .toList();
+
+            cardDebtStatus = this.getPersonalLoanStatus(personLoan, debts);
+        }
+
+        return cardDebtStatus;
+    }
+
+    public CardDebtStatus getCardDebtStatus(Card card, List<Debt> debts) {
+        List<Debt2FinishModel> almostCompletedDebts = getAlmostCompletedDebts(debts);
 
         double monthAmountPayemnt = debts.stream()
-                .mapToDouble(debt -> debt.getMonthAmount())
+                .mapToDouble(Debt::getMonthAmount)
                 .sum();
 
         Double totalDebtAmount = debts.stream()
@@ -95,14 +128,14 @@ public class DefaultDebtInformationService implements DebtInformationService {
 
         List<DebtModel> cardDebts = debts.stream()
                 .map(debt -> DebtModel.builder()
-                            .debtId(debt.getDebtId())
-                            .debtPaid(debt.getDebtPaid())
-                            .initialDebtAmount(debt.getInitialDebtAmount())
-                            .monthAmount(debt.getMonthAmount())
-                            .monthsFinanced(debt.getMonthsFinanced())
-                            .monthsPaid(debt.getMonthsPaid())
-                            .name(debt.getName())
-                            .build())
+                        .debtId(debt.getDebtId())
+                        .debtPaid(debt.getDebtPaid())
+                        .initialDebtAmount(debt.getInitialDebtAmount())
+                        .monthAmount(debt.getMonthAmount())
+                        .monthsFinanced(debt.getMonthsFinanced())
+                        .monthsPaid(debt.getMonthsPaid())
+                        .name(debt.getName())
+                        .build())
                 .toList();
 
         return CardDebtStatus.builder()
@@ -117,7 +150,44 @@ public class DefaultDebtInformationService implements DebtInformationService {
                 .build();
     }
 
-    private List<Debt2FinishModel> getAlmostComplitedDebts(List<Debt> debts) {
+    public CardDebtStatus getPersonalLoanStatus(PersonLoan personLoan, List<Debt> debts) {
+        List<Debt2FinishModel> almostCompletedDebts = getAlmostCompletedDebts(debts);
+
+        double monthAmountPayment = debts.stream()
+                .mapToDouble(Debt::getMonthAmount)
+                .sum();
+
+        Double totalDebtAmount = debts.stream()
+                .mapToDouble(debt -> debt.getInitialDebtAmount() - debt.getDebtPaid())
+                .sum();
+
+        double availableCredit = 0.0;
+
+        List<DebtModel> cardDebts = debts.stream()
+                .map(debt -> DebtModel.builder()
+                        .debtId(debt.getDebtId())
+                        .debtPaid(debt.getDebtPaid())
+                        .initialDebtAmount(debt.getInitialDebtAmount())
+                        .monthAmount(debt.getMonthAmount())
+                        .monthsFinanced(debt.getMonthsFinanced())
+                        .monthsPaid(debt.getMonthsPaid())
+                        .name(debt.getName())
+                        .build())
+                .toList();
+
+        return CardDebtStatus.builder()
+                .accountStatementType(MANUAL)
+                .almostCompletedDebts(almostCompletedDebts)
+                .availableCredit(availableCredit)
+                .cardName(personLoan.getLoanCode())
+                .credit(0.0)
+                .monthAmountPayment(monthAmountPayment)
+                .totalDebtAmount(totalDebtAmount)
+                .cardDebts(cardDebts)
+                .build();
+    }
+
+    private List<Debt2FinishModel> getAlmostCompletedDebts(List<Debt> debts) {
         return debts.stream()
                 .filter(debt -> debt.getDisabled() == false)
                 .filter(debt -> debt.getMonthsPaid() + 1 == debt.getMonthsFinanced())

@@ -15,9 +15,9 @@ public class DebtInformationController {
         this.debtInformationService = debtInformationService;
     }
 
-    @GetMapping("/card/statement/{cardCode}")
-    public ResponseEntity<CardDebtStatus> getCardStatement(@PathVariable String cardCode) {
-        return ResponseEntity.ok(debtInformationService.debtCardStatus(cardCode));
+    @GetMapping("/entity/statement/{entityStatementId}")
+    public ResponseEntity<CardDebtStatus> getPaymentEntityStatement(@PathVariable String entityStatementId) {
+        return ResponseEntity.ok(debtInformationService.debtEntityStatus(entityStatementId));
     }
 
     @GetMapping("/financial/statement")

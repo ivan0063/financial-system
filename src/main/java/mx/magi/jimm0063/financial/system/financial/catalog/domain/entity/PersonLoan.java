@@ -1,12 +1,11 @@
 package mx.magi.jimm0063.financial.system.financial.catalog.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,5 +23,8 @@ public class PersonLoan {
 
     @Column(name = "DISABLED")
     private Boolean disabled;
+
+    @OneToMany(mappedBy = "personLoanCode", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PersonLoanDebt> personLoanDebts;
 
 }

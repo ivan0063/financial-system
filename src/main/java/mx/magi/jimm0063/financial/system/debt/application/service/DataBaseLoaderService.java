@@ -1,6 +1,7 @@
 package mx.magi.jimm0063.financial.system.debt.application.service;
 
 import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,4 +25,11 @@ public interface DataBaseLoaderService {
      * @return
      */
     List<DebtModel> loadDebts(List<DebtModel> debtModels, String cardCode);
+
+    /**
+     * This method is meant to load debts from an Excel file
+     * @param file
+     * @return
+     */
+    List<DebtModel> importDebtsFromCSV(MultipartFile file);
 }
