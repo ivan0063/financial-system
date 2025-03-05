@@ -89,9 +89,8 @@ public class DefaultDebtInformationService implements DebtInformationService {
             Card card = cardRepository.findById(entityId)
                     .orElseThrow(() -> new RuntimeException("Card not found: " + entityId));
 
-            debts = card.getCardDebts()
+            debts = card.getDebts()
                     .stream()
-                    .map(CardDebt::getDebt)
                     .filter(debt -> debt.getDisabled() == false)
                     .toList();
 
@@ -101,9 +100,8 @@ public class DefaultDebtInformationService implements DebtInformationService {
         if (personLoanOptional.isPresent()) {
             PersonLoan personLoan = personLoanOptional.get();
 
-            debts = personLoan.getPersonLoanDebts()
+            debts = personLoan.getDebts()
                     .stream()
-                    .map(PersonLoanDebt::getDebt)
                     .filter(debt -> debt.getDisabled() == false)
                     .toList();
 

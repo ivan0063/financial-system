@@ -1,6 +1,9 @@
 package mx.magi.jimm0063.financial.system.payments.application.impl;
 
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.*;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.Card;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.CardPayment;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.Debt;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.DebtPayment;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.CardPaymentRepository;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.CardRepository;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.DebtPaymentRepository;
@@ -43,8 +46,7 @@ public class DefualtPaymentService implements PaymentService {
         cardPayment = this.cardPaymentRepository.save(cardPayment);
 
          // Getting Debts to update
-        List<Debt> debts =  card.getCardDebts().stream()
-                .map(CardDebt::getDebt)
+        List<Debt> debts =  card.getDebts().stream()
                 .filter(debt -> debt.getDisabled() == false)
                 .toList();
 

@@ -38,6 +38,6 @@ public class Card {
     @Column(name = "ENABLED")
     private Boolean enabled;
 
-    @OneToMany(mappedBy = "cardCode", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CardDebt> cardDebts;
+    @OneToMany(mappedBy = "card", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Debt> debts;
 }

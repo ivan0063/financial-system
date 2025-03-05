@@ -12,6 +12,7 @@ public class RestConfiguration implements RepositoryRestConfigurer {
     @Override
     public void configureRepositoryRestConfiguration(
             RepositoryRestConfiguration config, CorsRegistry cors) {
-        config.exposeIdsFor(Bank.class, Card.class, Debt.class, CardPayment.class, DebtPayment.class);
+        config.exposeIdsFor(Bank.class, Card.class, Debt.class, CardPayment.class,
+                DebtPayment.class, PersonLoan.class);
     }
 }

@@ -24,7 +24,6 @@ public class PersonLoan {
     @Column(name = "DISABLED")
     private Boolean disabled;
 
-    @OneToMany(mappedBy = "personLoanCode", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PersonLoanDebt> personLoanDebts;
-
+    @OneToMany(mappedBy = "personLoan", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Debt> debts;
 }

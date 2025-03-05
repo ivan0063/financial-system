@@ -7,9 +7,13 @@ import mx.magi.jimm0063.financial.system.debt.application.component.DebtHashComp
 import mx.magi.jimm0063.financial.system.debt.application.service.DataBaseLoaderService;
 import mx.magi.jimm0063.financial.system.debt.domain.dto.DebtModel;
 import mx.magi.jimm0063.financial.system.debt.domain.enums.PdfExtractorTypes;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.*;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.Card;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.Debt;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.entity.PersonLoan;
 import mx.magi.jimm0063.financial.system.financial.catalog.domain.enums.EntityType;
-import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.*;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.CardRepository;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.DebtRepository;
+import mx.magi.jimm0063.financial.system.financial.catalog.domain.repository.PersonLoanRepository;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -27,20 +31,18 @@ public class DefaultDataBaseLoaderService implements DataBaseLoaderService {
     private final AccountStatementFactory accountStatementFactory;
     private final CardRepository cardRepository;
     private final DebtRepository debtRepository;
-    private final CardDebtRepository cardDebtRepository;
     private final DebtHashComponent debtHashComponent;
     private final PersonLoanRepository personLoanRepository;
-    private final PersonLoanDebtRepository personLoanDebtRepository;
     private final ObjectMapper objectMapper;
 
-    public DefaultDataBaseLoaderService(AccountStatementFactory accountStatementFactory, CardRepository cardRepository, DebtRepository debtRepository, CardDebtRepository cardDebtRepository, DebtHashComponent debtHashComponent, PersonLoanRepository personLoanRepository, PersonLoanDebtRepository personLoanDebtRepository, ObjectMapper objectMapper) {
+    public DefaultDataBaseLoaderService(AccountStatementFactory accountStatementFactory, CardRepository cardRepository,
+                                        DebtRepository debtRepository, DebtHashComponent debtHashComponent,
+                                        PersonLoanRepository personLoanRepository, ObjectMapper objectMapper) {
         this.accountStatementFactory = accountStatementFactory;
         this.cardRepository = cardRepository;
         this.debtRepository = debtRepository;
-        this.cardDebtRepository = cardDebtRepository;
         this.debtHashComponent = debtHashComponent;
         this.personLoanRepository = personLoanRepository;
-        this.personLoanDebtRepository = personLoanDebtRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -143,20 +145,11 @@ public class DefaultDataBaseLoaderService implements DataBaseLoaderService {
         PersonLoan personLoan = this.personLoanRepository.findById(personLoanCode)
                 .orElseThrow(() -> new RuntimeException("Person loan with code " + personLoanCode + " not found"));
         // Look if the debt already exist
+        debt.setPersonLoan(personLoan);
         Optional<?> personLoanOptional = debtRepository.findById(debt.getDebtId());
         if(personLoanOptional.isPresent()) return null;
 
         debt = this.debtRepository.save(debt);
-
-        PersonLoanDebtId personLoanDebtId = new PersonLoanDebtId();
-        personLoanDebtId.setDebtId(debt.getDebtId());
-        personLoanDebtId.setLoanCode(personLoanCode);
-
-        PersonLoanDebt personLoanDebt = new PersonLoanDebt();
-        personLoanDebt.setId(personLoanDebtId);
-        personLoanDebt.setDebt(debt);
-        personLoanDebt.setPersonLoanCode(personLoan);
-        this.personLoanDebtRepository.save(personLoanDebt);
 
         return debt;
     }
@@ -164,21 +157,11 @@ public class DefaultDataBaseLoaderService implements DataBaseLoaderService {
     private Debt saveCardDebt(Debt debt, String cardCode) {
         Card card = this.findCardByCode(cardCode);
         // Look if the debt already exist
+        debt.setCard(card);
         Optional<?> cardDebtOptional = debtRepository.findById(debt.getDebtId());
 
         if(cardDebtOptional.isPresent()) return null;
-
         debt = this.debtRepository.save(debt);
-
-        CardDebtId cardDebtId = new CardDebtId();
-        cardDebtId.setDebtId(debt.getDebtId());
-        cardDebtId.setCardCode(card.getCardCode());
-
-        CardDebt cardDebt = new CardDebt();
-        cardDebt.setId(cardDebtId);
-        cardDebt.setDebt(debt);
-        cardDebt.setCardCode(card);
-        this.cardDebtRepository.save(cardDebt);
 
         return debt;
     }
@@ -189,9 +172,8 @@ public class DefaultDataBaseLoaderService implements DataBaseLoaderService {
     }
 
     public List<DebtModel> saveDebts(List<DebtModel> accountStatementDebts, Card card) {
-        Set<String> debtsInCard = new HashSet<>(card.getCardDebts()
+        Set<String> debtsInCard = new HashSet<>(card.getDebts()
                 .stream()
-                .map(CardDebt::getDebt)
                 .map(Debt::getDebtId)
                 .toList());
 
@@ -217,30 +199,14 @@ public class DefaultDataBaseLoaderService implements DataBaseLoaderService {
                     debt.setMonthsFinanced(accountStatementDebt.getMonthsFinanced());
                     debt.setMonthsPaid(accountStatementDebt.getMonthsPaid());
                     debt.setMonthAmount(accountStatementDebt.getMonthAmount());
+                    debt.setCard(card);
                     debt.setDisabled(false);
 
                     return debt;
                 })
                 .collect(Collectors.toList());
 
-        debtsToAdd = this.debtRepository.saveAll(debtsToAdd);
-
-        List<CardDebt> cardDebts = debtsToAdd.stream()
-                .map(debtAdded -> {
-                    CardDebt cardDebt = new CardDebt();
-
-                    CardDebtId cardDebtId = new CardDebtId();
-                    cardDebtId.setDebtId(debtAdded.getDebtId());
-                    cardDebtId.setCardCode(card.getCardCode());
-
-                    cardDebt.setId(cardDebtId);
-                    cardDebt.setCardCode(card);
-                    cardDebt.setDebt(debtAdded);
-
-                    return cardDebt;
-                })
-                .toList();
-        this.cardDebtRepository.saveAll(cardDebts);
+        this.debtRepository.saveAll(debtsToAdd);
 
         return filteredDebts;
     }
