@@ -9,13 +9,14 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class DefualtDebtPaymentExcelService implements DebtPaymentExcelService {
 
     private static final String[] HEADERS = {
             "Created At", "Name", "Initial Debt Amount", "Debt Paid",
-            "Months Financed", "Months Paid", "Month Amount"
+            "Months Financed", "Months Paid", "Month Amount", "bank"
     };
 
     @Override
@@ -46,6 +47,13 @@ public class DefualtDebtPaymentExcelService implements DebtPaymentExcelService {
     private void fillDataRows(Sheet sheet, List<Debt> payments) {
         int rowNum = 1;
         for (Debt payment : payments) {
+            String bankName = "";
+            if(Objects.nonNull(payment.getCard()))
+                bankName = payment.getCard().getCardCode();
+
+            if(Objects.nonNull(payment.getPersonLoan()))
+                bankName = payment.getPersonLoan().getLoanCode();
+
             Row row = sheet.createRow(rowNum++);
             row.createCell(0).setCellValue(payment.getCreatedAt().toString());
             row.createCell(1).setCellValue(payment.getName());
@@ -54,6 +62,7 @@ public class DefualtDebtPaymentExcelService implements DebtPaymentExcelService {
             row.createCell(4).setCellValue(payment.getMonthsFinanced());
             row.createCell(5).setCellValue(payment.getMonthsPaid());
             row.createCell(6).setCellValue(payment.getMonthAmount());
+            row.createCell(7).setCellValue(bankName);
         }
     }
 }
