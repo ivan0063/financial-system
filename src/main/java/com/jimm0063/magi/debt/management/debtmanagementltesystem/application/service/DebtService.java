@@ -87,11 +87,14 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
     public List<Debt> saveUnrepeated(List<Debt> debts, String debtAccountCode) {
         DebtAccount debtAccount = this.debtAccountRepository.findDebtAccountByCodeAndActiveTrue(debtAccountCode)
                 .orElseThrow(() -> new EntityNotFoundException("Debt Account " + debtAccountCode));
-        List<Debt> debtAccountDebts = debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode);
+
         debts.stream()
                 .filter(debt -> Objects.isNull(debt.getHashSum()))
                 .forEach(debt -> debt.setHashSum(this.getHashSum(debt, debtAccountCode)));
 
+        this.deactivateObsoleteDebts(debts, debtAccountCode);
+
+        List<Debt> debtAccountDebts = debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode);
         List<Debt> debtsFound = DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, debts)
                 .stream()
                 .peek(debt -> debt.setDebtAccount(debtAccount))

@@ -41,8 +41,7 @@ public class AccountStatementController {
                     debt.setHashSum(sum);
                 })
                 .toList();
-        List<Debt> filteredAccountStatementDebts = this.filterDebtsUseCase.filterAccountStatementDebts(accountStatementDebts, debtAccountCode);
-        return ResponseEntity.ok(filteredAccountStatementDebts);
+        return ResponseEntity.ok(accountStatementDebts);
     }
 
     @PostMapping(path = "/sync/{debtAccountCode}", consumes = "multipart/form-data")
