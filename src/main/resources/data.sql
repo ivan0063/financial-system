@@ -77,6 +77,7 @@ CREATE TABLE debt_management.debt
     created_at          timestamp,
     updated_at          timestamp,
     active              BOOLEAN default TRUE,
+    hash_sum            varchar(64),
     debt_account        varchar(150)       not null,
     foreign key (debt_account) references debt_management.debt_account (code)
 );
