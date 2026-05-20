@@ -16,6 +16,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase, FindAllDebtsUseCase, LoadDebtList, DebtDuplicationPreventUseCase {
@@ -38,6 +40,31 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
                 })
                 .toList();
         return DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, accountStatementDebts);
+    }
+
+    @Override
+    public void deactivateObsoleteDebts(List<Debt> statementDebts, String debtAccountCode) {
+        List<Debt> dbDebts = this.debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode)
+                .stream()
+                .peek(d -> { if (d.getHashSum() == null) d.setHashSum(this.getHashSum(d, debtAccountCode)); })
+                .toList();
+
+        if (dbDebts.isEmpty()) return;
+
+        Set<String> activeStatementHashes = statementDebts.stream()
+                .filter(d -> !d.getCurrentInstallment().equals(d.getMaxFinancingTerm()))
+                .map(Debt::getHashSum)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        List<Debt> toDeactivate = dbDebts.stream()
+                .filter(d -> !activeStatementHashes.contains(d.getHashSum()))
+                .peek(d -> d.setActive(false))
+                .toList();
+
+        if (!toDeactivate.isEmpty()) {
+            this.debtRepository.saveAll(toDeactivate);
+        }
     }
 
     @Override
