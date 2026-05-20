@@ -29,7 +29,14 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
 
     @Override
     public List<Debt> filterAccountStatementDebts(List<Debt> accountStatementDebts, String debtAccountCode) {
-        List<Debt> debtAccountDebts = this.debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode);
+        List<Debt> debtAccountDebts = this.debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode)
+                .stream()
+                .peek(debt -> {
+                    if (debt.getHashSum() == null) {
+                        debt.setHashSum(this.getHashSum(debt, debtAccountCode));
+                    }
+                })
+                .toList();
         return DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, accountStatementDebts);
     }
 
