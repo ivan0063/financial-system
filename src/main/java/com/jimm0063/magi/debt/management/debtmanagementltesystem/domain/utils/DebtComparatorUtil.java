@@ -23,7 +23,8 @@ public class DebtComparatorUtil {
 
         for (Debt statementDebt : new ArrayList<>(candidates))
             for (Debt dbDebt : debtAccountDebts)
-                if (compareDebts(statementDebt, dbDebt))
+                if (compareDebts(statementDebt, dbDebt)
+                        && statementDebt.getCurrentInstallment().equals(dbDebt.getCurrentInstallment()))
                     candidates.remove(statementDebt);
 
         return candidates;

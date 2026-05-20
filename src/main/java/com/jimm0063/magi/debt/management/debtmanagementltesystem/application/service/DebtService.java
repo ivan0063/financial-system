@@ -14,7 +14,9 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -87,17 +89,36 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
     public List<Debt> saveUnrepeated(List<Debt> debts, String debtAccountCode) {
         DebtAccount debtAccount = this.debtAccountRepository.findDebtAccountByCodeAndActiveTrue(debtAccountCode)
                 .orElseThrow(() -> new EntityNotFoundException("Debt Account " + debtAccountCode));
-        List<Debt> debtAccountDebts = debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode);
+
+        List<Debt> debtAccountDebts = debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode)
+                .stream()
+                .peek(d -> { if (d.getHashSum() == null) d.setHashSum(this.getHashSum(d, debtAccountCode)); })
+                .toList();
+
         debts.stream()
                 .filter(debt -> Objects.isNull(debt.getHashSum()))
                 .forEach(debt -> debt.setHashSum(this.getHashSum(debt, debtAccountCode)));
 
-        List<Debt> debtsFound = DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, debts)
-                .stream()
-                .peek(debt -> debt.setDebtAccount(debtAccount))
-                .toList();
+        Map<String, Debt> dbByHash = debtAccountDebts.stream()
+                .filter(d -> d.getHashSum() != null)
+                .collect(Collectors.toMap(Debt::getHashSum, d -> d));
 
-        return debtRepository.saveAll(debtsFound);
+        List<Debt> toSave = new ArrayList<>();
+        List<Debt> toUpdate = new ArrayList<>();
+
+        for (Debt debt : DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, debts)) {
+            Debt dbMatch = dbByHash.get(debt.getHashSum());
+            if (dbMatch != null) {
+                dbMatch.setCurrentInstallment(debt.getCurrentInstallment());
+                toUpdate.add(dbMatch);
+            } else {
+                debt.setDebtAccount(debtAccount);
+                toSave.add(debt);
+            }
+        }
+
+        if (!toUpdate.isEmpty()) debtRepository.saveAll(toUpdate);
+        return debtRepository.saveAll(toSave);
     }
 
     @Override
