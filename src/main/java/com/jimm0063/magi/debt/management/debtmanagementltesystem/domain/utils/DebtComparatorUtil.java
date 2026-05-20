@@ -5,6 +5,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.De
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class DebtComparatorUtil {
     public static boolean compareDebts(Debt debt1, Debt debt2) {
@@ -14,14 +15,17 @@ public class DebtComparatorUtil {
     }
 
     public static List<Debt> filterAccountStatementDebts(List<Debt> debtAccountDebts, List<Debt> accountStatementDebts) {
-        if (debtAccountDebts.isEmpty()) return accountStatementDebts;
-        List<Debt> resultDebts = new ArrayList<>(accountStatementDebts);
+        List<Debt> candidates = accountStatementDebts.stream()
+                .filter(d -> !d.getCurrentInstallment().equals(d.getMaxFinancingTerm()))
+                .collect(Collectors.toCollection(ArrayList::new));
 
-        for (Debt accountStatementDebt : accountStatementDebts)
-            for (Debt debtAccountDebt : debtAccountDebts)
-                if (compareDebts(accountStatementDebt, debtAccountDebt))
-                    resultDebts.remove(accountStatementDebt);
+        if (debtAccountDebts.isEmpty()) return candidates;
 
-        return resultDebts;
+        for (Debt statementDebt : new ArrayList<>(candidates))
+            for (Debt dbDebt : debtAccountDebts)
+                if (compareDebts(statementDebt, dbDebt))
+                    candidates.remove(statementDebt);
+
+        return candidates;
     }
 }

@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface FilterDebtsUseCase {
     List<Debt> filterAccountStatementDebts(List<Debt> accountStatementDebts, String debtAccountCode);
+    void deactivateObsoleteDebts(List<Debt> statementDebts, String debtAccountCode);
 }
