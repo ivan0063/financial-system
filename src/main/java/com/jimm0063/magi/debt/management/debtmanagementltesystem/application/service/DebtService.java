@@ -3,6 +3,8 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.application.se
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.*;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtRepository;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountStatementPreviewDto;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.DebtInstallmentUpdateDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.EntityNotFoundException;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.DebtAccount;
@@ -32,16 +34,33 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
     }
 
     @Override
-    public List<Debt> filterAccountStatementDebts(List<Debt> accountStatementDebts, String debtAccountCode) {
-        List<Debt> debtAccountDebts = this.debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode)
+    public AccountStatementPreviewDto previewAccountStatement(List<Debt> accountStatementDebts, String debtAccountCode) {
+        List<Debt> dbDebts = this.debtRepository.findAllDebtsByDebtAccountAndActiveTrue(debtAccountCode)
                 .stream()
-                .peek(debt -> {
-                    if (debt.getHashSum() == null) {
-                        debt.setHashSum(this.getHashSum(debt, debtAccountCode));
-                    }
-                })
+                .peek(d -> { if (d.getHashSum() == null) d.setHashSum(this.getHashSum(d, debtAccountCode)); })
                 .toList();
-        return DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, accountStatementDebts);
+
+        Map<String, Debt> dbByHash = dbDebts.stream()
+                .filter(d -> d.getHashSum() != null)
+                .collect(Collectors.toMap(Debt::getHashSum, d -> d));
+
+        List<Debt> newDebts = new ArrayList<>();
+        List<DebtInstallmentUpdateDto> installmentUpdates = new ArrayList<>();
+
+        for (Debt debt : DebtComparatorUtil.filterAccountStatementDebts(dbDebts, accountStatementDebts)) {
+            Debt dbMatch = dbByHash.get(debt.getHashSum());
+            if (dbMatch != null) {
+                DebtInstallmentUpdateDto update = new DebtInstallmentUpdateDto();
+                update.setDebt(debt);
+                update.setPreviousInstallment(dbMatch.getCurrentInstallment());
+                update.setNewInstallment(debt.getCurrentInstallment());
+                installmentUpdates.add(update);
+            } else {
+                newDebts.add(debt);
+            }
+        }
+
+        return new AccountStatementPreviewDto(newDebts, installmentUpdates);
     }
 
     @Override
