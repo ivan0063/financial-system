@@ -1,7 +1,6 @@
 package com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.web;
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.DebtDuplicationPreventUseCase;
-import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FilterDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FindAllDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
@@ -20,14 +19,12 @@ public class DebtController {
     private final DebtMapper debtMapper;
     private final FindAllDebtsUseCase findAllDebtsUseCase;
     private final DebtDuplicationPreventUseCase debtDuplicationPreventUseCase;
-    private final FilterDebtsUseCase filterDebtsUseCase;
 
-    public DebtController(DebtRepository debtRepository, DebtMapper debtMapper, FindAllDebtsUseCase findAllDebtsUseCase, DebtDuplicationPreventUseCase debtDuplicationPreventUseCase, FilterDebtsUseCase filterDebtsUseCase) {
+    public DebtController(DebtRepository debtRepository, DebtMapper debtMapper, FindAllDebtsUseCase findAllDebtsUseCase, DebtDuplicationPreventUseCase debtDuplicationPreventUseCase) {
         this.debtRepository = debtRepository;
         this.debtMapper = debtMapper;
         this.findAllDebtsUseCase = findAllDebtsUseCase;
         this.debtDuplicationPreventUseCase = debtDuplicationPreventUseCase;
-        this.filterDebtsUseCase = filterDebtsUseCase;
     }
 
     @PostMapping("/{debtAccountCode}")
@@ -49,11 +46,6 @@ public class DebtController {
     @GetMapping("/all/{debtAccountCode}")
     public ResponseEntity<List<Debt>> getAllActiveDebtsByDebtAccount(@PathVariable String debtAccountCode) {
         return ResponseEntity.ok(findAllDebtsUseCase.getActiveByDebtAccount(debtAccountCode));
-    }
-
-    @PostMapping("/validate/{debtAccountCode}")
-    public ResponseEntity<List<Debt>> validateDebtAccountDebts(@PathVariable String debtAccountCode, @RequestBody List<Debt> debts) {
-        return ResponseEntity.ok(this.filterDebtsUseCase.filterAccountStatementDebts(debts, debtAccountCode));
     }
 
     @GetMapping("/all")
