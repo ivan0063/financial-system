@@ -1,18 +1,18 @@
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASS}
-    driver-class-name: org.postgresql.Driver
+    url: ${SPRING_DB_URL}
+    username: ${SPRING_DB_USER}
+    password: ${SPRING_DB_PASSWORD}
+    driver-class-name: ${SPRING_DB_DRIVE:org.postgresql.Driver}
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: false
-  sql:
-    init:
-      mode: always
+    properties:
+      hibernate:
+        default_schema: ${SPRING_DB_SCHEMA:public}
   data:
     rest:
       base-path: /data
 server:
-  port: 8090
+  port: 666
