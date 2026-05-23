@@ -14,5 +14,11 @@ spring:
   data:
     rest:
       base-path: /data
+  mvc:
+    hiddenmethod:
+      filter:
+        enabled: true
+  thymeleaf:
+    cache: false
 server:
   port: 666

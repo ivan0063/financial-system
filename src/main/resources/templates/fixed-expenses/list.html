@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fixed Expenses – Financial Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body class="bg-light">
+
+<div th:replace="~{layout/navbar :: navbar}"></div>
+
+<div class="container">
+    <h2 class="mb-4 fw-bold"><i class="bi bi-receipt me-2 text-primary"></i>Fixed Expenses</h2>
+
+    <div class="row g-4">
+        <!-- Expense Catalogs -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-semibold"><i class="bi bi-collection me-2"></i>Expense Categories</h6>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/ui/fixed-expenses/catalog}" method="post" class="d-flex gap-2 mb-3">
+                        <input type="text" name="name" class="form-control" placeholder="New category" required>
+                        <button type="submit" class="btn btn-primary text-nowrap">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
+                    </form>
+                    <div class="list-group" th:if="${!catalogs.empty}">
+                        <div th:each="catalog : ${catalogs}"
+                             class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>
+                                <i class="bi bi-tag me-2 text-muted"></i>
+                                <span th:text="${catalog.name}"></span>
+                                <small class="text-muted ms-2">#<span th:text="${catalog.id}"></span></small>
+                            </span>
+                            <form th:action="@{/ui/fixed-expenses/catalog/{id}(id=${catalog.id})}" method="post">
+                                <input type="hidden" name="_method" value="DELETE">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                        onclick="return confirm('Delete this category?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <p class="text-muted text-center mt-2" th:if="${catalogs.empty}">
+                        <i class="bi bi-inbox me-1"></i>No categories yet.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fixed Expenses -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0 fw-semibold"><i class="bi bi-list-check me-2"></i>My Fixed Expenses</h6>
+                </div>
+                <div class="card-body">
+                    <!-- Add Expense Form -->
+                    <form th:action="@{/ui/fixed-expenses}" method="post" class="mb-3">
+                        <div class="row g-2">
+                            <div class="col-sm-4">
+                                <input type="text" name="name" class="form-control" placeholder="Expense name" required>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="number" name="monthlyCost" step="0.01" class="form-control" placeholder="Monthly cost">
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="number" name="paymentDay" class="form-control" placeholder="Pay day" min="1" max="31">
+                            </div>
+                            <div class="col-sm-3">
+                                <select name="catalogId" class="form-select" required>
+                                    <option value="">-- Category --</option>
+                                    <option th:each="cat : ${catalogs}"
+                                            th:value="${cat.id}"
+                                            th:text="${cat.name}"></option>
+                                </select>
+                            </div>
+                            <div class="col-sm-1">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Expenses Table -->
+                    <div class="table-responsive" th:if="${!expenses.empty}">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Monthly Cost</th>
+                                <th>Pay Day</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="expense : ${expenses}">
+                                <td th:text="${expense.name}"></td>
+                                <td th:text="${expense.fixedExpenseCatalog?.name}"></td>
+                                <td th:text="${'$' + #numbers.formatDecimal(expense.monthlyCost, 1, 2)}"></td>
+                                <td th:text="${expense.paymentDay}"></td>
+                                <td>
+                                    <form th:action="@{/ui/fixed-expenses/{id}(id=${expense.id})}" method="post">
+                                        <input type="hidden" name="_method" value="DELETE">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Delete this expense?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-muted text-center mt-3" th:if="${expenses.empty}">
+                        <i class="bi bi-inbox me-1"></i>No fixed expenses yet.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
