@@ -1,6 +1,7 @@
 package com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.adapter;
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.AccountStatementType;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.EntityNotFoundException;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.DebtAccount;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.FinancialProvider;
@@ -24,7 +25,8 @@ public class DebtAccountRepositoryAdapter implements DebtAccountRepository {
 
     public DebtAccountRepositoryAdapter(DebtAccountJpaRepository debtAccountJpaRepository,
                                         DebtAccountMapper debtAccountMapper,
-                                        FinancialProviderMapper financialProviderMapper, FinancialProviderJpaRepository financialProviderJpaRepository) {
+                                        FinancialProviderMapper financialProviderMapper,
+                                        FinancialProviderJpaRepository financialProviderJpaRepository) {
         this.debtAccountJpaRepository = debtAccountJpaRepository;
         this.debtAccountMapper = debtAccountMapper;
         this.financialProviderMapper = financialProviderMapper;
@@ -72,9 +74,17 @@ public class DebtAccountRepositoryAdapter implements DebtAccountRepository {
     }
 
     @Override
+    public DebtAccount updateStatementType(String code, AccountStatementType accountStatementType) {
+        DebtAccountEntity entity = debtAccountJpaRepository.findById(code)
+                .orElseThrow(() -> new EntityNotFoundException("Debt account " + code + " not found"));
+        entity.setAccountStatementType(accountStatementType);
+        return debtAccountMapper.toModel(debtAccountJpaRepository.save(entity));
+    }
+
+    @Override
     public void delete(String debtAccountCode) {
         DebtAccountEntity debtAccountEntity = debtAccountJpaRepository.findById(debtAccountCode)
-                        .orElseThrow(() -> new IllegalArgumentException("Debt account " + debtAccountCode + " not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Debt account " + debtAccountCode + " not found"));
         debtAccountEntity.setActive(false);
         debtAccountJpaRepository.save(debtAccountEntity);
     }
