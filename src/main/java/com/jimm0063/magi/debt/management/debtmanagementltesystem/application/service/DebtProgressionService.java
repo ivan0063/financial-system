@@ -55,13 +55,17 @@ public class DebtProgressionService implements GetDebtProgressionUseCase {
                         .filter(d -> (d.getMaxFinancingTerm() - d.getCurrentInstallment()) == offset)
                         .toList();
 
+                long activeCount = debts.stream()
+                        .filter(d -> (d.getMaxFinancingTerm() - d.getCurrentInstallment()) > offset)
+                        .count();
+
                 BigDecimal cardPayment = debts.stream()
                         .filter(d -> (d.getMaxFinancingTerm() - d.getCurrentInstallment()) >= offset)
                         .map(Debt::getMonthlyPayment)
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 if (cardPayment.compareTo(BigDecimal.ZERO) > 0) {
-                    cards.add(new CardProgressionDto(account.getCode(), account.getName(), closingDebts, cardPayment));
+                    cards.add(new CardProgressionDto(account.getCode(), account.getName(), closingDebts, (int) activeCount, cardPayment));
                     totalPayment = totalPayment.add(cardPayment);
                 }
             }

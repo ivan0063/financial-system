@@ -7,18 +7,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        .timeline-line {
-            border-left: 3px solid #dee2e6;
-            padding-left: 1.5rem;
-            margin-left: 0.75rem;
-        }
-        .timeline-dot {
-            width: 1.5rem;
-            height: 1.5rem;
-            border-radius: 50%;
-            margin-left: -0.15rem;
-        }
-        .closing-badge { font-size: 0.75rem; }
+        .summary-row { cursor: pointer; }
+        .summary-row:hover td { background-color: #f0f4ff; }
+        .detail-row td { background-color: #f8f9fa; padding: 0; }
+        .chevron-icon { transition: transform 0.2s; }
+        .summary-row[aria-expanded="true"] .chevron-icon { transform: rotate(180deg); }
     </style>
 </head>
 <body class="bg-light">
@@ -66,73 +59,99 @@
         <p class="mt-3">Selecciona una fecha objetivo para ver la progresión de tus deudas.</p>
     </div>
 
-    <!-- Empty state: target selected but no active debts -->
+    <!-- Empty state: no active debts -->
     <div th:if="${progression != null and progression.empty}" class="text-center text-muted py-5">
         <i class="bi bi-check-circle fs-1 text-success"></i>
         <p class="mt-3">¡No hay deudas activas para proyectar en ese rango!</p>
     </div>
 
-    <!-- Timeline -->
-    <div th:if="${progression != null and !progression.empty}">
-        <div th:each="entry, iterStat : ${progression}">
+    <!-- Progression table -->
+    <div th:if="${progression != null and !progression.empty}" class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th style="width: 40%">Mes</th>
+                        <th style="width: 45%">Pago total</th>
+                        <th style="width: 15%" class="text-center">Detalle</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <th:block th:each="entry, iterStat : ${progression}">
 
-            <!-- Month row -->
-            <div class="d-flex align-items-start mb-1">
-                <!-- Dot -->
-                <div th:classappend="${entry.hasClosingDebts()} ? 'bg-success' : 'bg-primary'"
-                     class="timeline-dot flex-shrink-0 d-flex align-items-center justify-content-center text-white me-3 mt-1">
-                </div>
+                        <!-- Summary row (clickable) -->
+                        <tr class="summary-row"
+                            th:classappend="${entry.hasClosingDebts()} ? 'table-success' : ''"
+                            data-bs-toggle="collapse"
+                            th:attr="data-bs-target='#detail-' + ${iterStat.index}, aria-expanded='false', aria-controls='detail-' + ${iterStat.index}">
+                            <td class="fw-semibold text-capitalize" th:text="${entry.displayName}">Mes</td>
+                            <td class="fw-bold"
+                                th:text="${'$' + #numbers.formatDecimal(entry.totalPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                            <td class="text-center">
+                                <i class="bi bi-chevron-down chevron-icon text-secondary"></i>
+                            </td>
+                        </tr>
 
-                <!-- Month card -->
-                <div class="flex-grow-1 mb-3">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                            <h5 class="mb-0 text-capitalize fw-bold" th:text="${entry.displayName}">Mes</h5>
-                            <span class="fs-5 fw-bold text-primary"
-                                  th:text="${'$' + #numbers.formatDecimal(entry.totalPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
-                        </div>
-                        <div class="card-body p-0">
-
-                            <!-- Per-card rows -->
-                            <div th:each="card, cardStat : ${entry.cards}"
-                                 th:classappend="${!cardStat.last} ? 'border-bottom' : ''"
-                                 class="px-4 py-3">
-
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <span class="fw-semibold" th:text="${card.accountName}">Card</span>
-                                        <small class="text-muted font-monospace ms-2" th:text="${card.accountCode}"></small>
+                        <!-- Detail row (collapsed) -->
+                        <tr>
+                            <td colspan="3" class="detail-row p-0">
+                                <div class="collapse" th:id="'detail-' + ${iterStat.index}">
+                                    <div class="p-3">
+                                        <table class="table table-sm table-bordered mb-0 bg-white">
+                                            <thead class="table-secondary">
+                                                <tr>
+                                                    <th>Tarjeta</th>
+                                                    <th>Pago</th>
+                                                    <th>Deudas que cierran</th>
+                                                    <th class="text-center">Activas</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr th:each="card : ${entry.cards}">
+                                                    <td>
+                                                        <span class="fw-semibold" th:text="${card.accountName}">Card</span>
+                                                        <br>
+                                                        <small class="text-muted font-monospace" th:text="${card.accountCode}"></small>
+                                                    </td>
+                                                    <td class="fw-semibold"
+                                                        th:text="${'$' + #numbers.formatDecimal(card.cardPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                                                    <td>
+                                                        <span th:if="${card.closingDebts().isEmpty()}" class="text-muted small">—</span>
+                                                        <div th:unless="${card.closingDebts().isEmpty()}" class="d-flex flex-wrap gap-1">
+                                                            <span th:each="debt : ${card.closingDebts()}"
+                                                                  class="badge bg-success"
+                                                                  th:text="${debt.description}">Deuda</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-secondary" th:text="${card.activeDebtCount()}">0</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
-                                    <span class="fw-semibold text-secondary"
-                                          th:text="${'$' + #numbers.formatDecimal(card.cardPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
                                 </div>
+                            </td>
+                        </tr>
 
-                                <!-- Closing debts -->
-                                <div th:if="${!card.closingDebts().isEmpty()}" class="mt-2">
-                                    <small class="text-success fw-semibold">
-                                        <i class="bi bi-check-circle me-1"></i>Se liquidan este mes:
-                                    </small>
-                                    <div class="d-flex flex-wrap gap-1 mt-1">
-                                        <span th:each="debt : ${card.closingDebts()}"
-                                              class="badge bg-success-subtle text-success closing-badge"
-                                              th:text="${debt.description}">Deuda</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Connecting line (not after last item) -->
-            <div th:unless="${iterStat.last}" class="timeline-line mb-0" style="height: 0.5rem;"></div>
-
+                    </th:block>
+                </tbody>
+            </table>
         </div>
     </div>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Rotate chevron when row collapses/expands
+    document.querySelectorAll('.summary-row').forEach(row => {
+        const targetId = row.getAttribute('data-bs-target');
+        const detail = document.querySelector(targetId);
+        if (!detail) return;
+        detail.addEventListener('show.bs.collapse', () => row.setAttribute('aria-expanded', 'true'));
+        detail.addEventListener('hide.bs.collapse', () => row.setAttribute('aria-expanded', 'false'));
+    });
+</script>
 </body>
 </html>

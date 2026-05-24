@@ -9,5 +9,6 @@ public record CardProgressionDto(
         String accountCode,
         String accountName,
         List<Debt> closingDebts,
+        int activeDebtCount,
         BigDecimal cardPayment
 ) {}
