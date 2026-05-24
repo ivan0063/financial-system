@@ -50,6 +50,10 @@
                 <i class="bi bi-arrow-up-circle me-1"></i>
                 <span th:text="${#lists.size(installmentUpdates)}">0</span> to update
             </span>
+            <span class="badge bg-danger fs-6 px-3 py-2" th:if="${not #lists.isEmpty(completedDebts)}">
+                <i class="bi bi-x-circle me-1"></i>
+                <span th:text="${#lists.size(completedDebts)}">0</span> to close
+            </span>
         </div>
     </div>
 
@@ -258,6 +262,53 @@
     <div class="alert alert-light border mb-2 py-2 small text-muted"
          th:if="${#lists.isEmpty(installmentUpdates)}">
         <i class="bi bi-check-circle me-1 text-success"></i>No installment changes detected.
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         SECTION 4: DEBTS TO BE CLOSED (max installment reached)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="section-divider" th:if="${not #lists.isEmpty(completedDebts)}">Debts to be closed</div>
+
+    <div class="card shadow-sm border-danger mb-2" th:if="${not #lists.isEmpty(completedDebts)}">
+        <div class="card-header bg-danger bg-opacity-10 py-2">
+            <span class="fw-semibold text-danger small">
+                <i class="bi bi-x-circle me-1"></i>
+                <span th:text="${#lists.size(completedDebts)}">0</span> debts reached their final installment
+            </span>
+            <small class="text-muted ms-2">These will be marked as <strong>closed</strong> when you save.</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+                <thead class="table-danger bg-opacity-50">
+                <tr>
+                    <th>Description</th>
+                    <th class="text-end" style="min-width:100px">Amount</th>
+                    <th class="text-end" style="min-width:100px">Monthly</th>
+                    <th style="min-width:200px">Final Installment</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="debt : ${completedDebts}">
+                    <td>
+                        <span th:text="${debt.description}"></span>
+                        <span class="badge text-bg-danger ms-1 small">completed</span>
+                    </td>
+                    <td class="text-end font-monospace small" th:text="${debt.originalAmount}"></td>
+                    <td class="text-end font-monospace small" th:text="${debt.monthlyPayment}"></td>
+                    <td>
+                        <div th:if="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
+                             class="d-flex align-items-center gap-2">
+                            <div class="progress flex-grow-1" style="height:6px;">
+                                <div class="progress-bar bg-danger" style="width:100%"></div>
+                            </div>
+                            <span class="inst-badge text-danger fw-semibold text-nowrap"
+                                  th:text="${debt.maxFinancingTerm + '/' + debt.maxFinancingTerm}"></span>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div><!-- /container -->

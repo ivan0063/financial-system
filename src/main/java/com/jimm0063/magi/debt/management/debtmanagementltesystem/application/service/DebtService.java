@@ -60,7 +60,16 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
             }
         }
 
-        return new AccountStatementPreviewDto(newDebts, installmentUpdates);
+        // Debts whose statement entry is at max installment — they will be closed on save
+        List<Debt> completedDebts = accountStatementDebts.stream()
+                .filter(d -> d.getCurrentInstallment() != null
+                        && d.getMaxFinancingTerm() != null
+                        && d.getCurrentInstallment().equals(d.getMaxFinancingTerm()))
+                .map(d -> dbByHash.get(d.getHashSum()))
+                .filter(Objects::nonNull)
+                .toList();
+
+        return new AccountStatementPreviewDto(newDebts, installmentUpdates, completedDebts);
     }
 
     @Override
@@ -136,6 +145,17 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
             }
         }
 
+        // Deactivate DB debts whose statement entry reached max installment
+        List<Debt> toDeactivate = debts.stream()
+                .filter(d -> d.getCurrentInstallment() != null
+                        && d.getMaxFinancingTerm() != null
+                        && d.getCurrentInstallment().equals(d.getMaxFinancingTerm()))
+                .map(d -> dbByHash.get(d.getHashSum()))
+                .filter(Objects::nonNull)
+                .peek(d -> d.setActive(false))
+                .toList();
+
+        if (!toDeactivate.isEmpty()) debtRepository.saveAll(toDeactivate);
         if (!toUpdate.isEmpty()) debtRepository.saveAll(toUpdate);
         return debtRepository.saveAll(toSave);
     }
