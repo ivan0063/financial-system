@@ -147,7 +147,7 @@
                                    class="form-control form-control-sm">
                         </td>
                         <td>
-                            <input type="number" step="0.01"
+                            <input type="number" step="0.01" required
                                    th:name="|debts[${iterStat.index}].monthlyPayment|"
                                    th:value="${debt.monthlyPayment}"
                                    class="form-control form-control-sm">
@@ -159,13 +159,13 @@
                                    class="form-control form-control-sm">
                         </td>
                         <td>
-                            <input type="number"
+                            <input type="number" required
                                    th:name="|debts[${iterStat.index}].maxFinancingTerm|"
                                    th:value="${debt.maxFinancingTerm}"
                                    class="form-control form-control-sm">
                         </td>
                         <td>
-                            <select th:name="|debts[${iterStat.index}].debtType|"
+                            <select required th:name="|debts[${iterStat.index}].debtType|"
                                     class="form-select form-select-sm">
                                 <option th:each="dtype : ${debtTypes}"
                                         th:value="${dtype}"

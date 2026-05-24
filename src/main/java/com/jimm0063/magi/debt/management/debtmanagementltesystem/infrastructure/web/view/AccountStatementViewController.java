@@ -112,6 +112,7 @@ public class AccountStatementViewController {
                         && !req.getDescription().isBlank())
                 .map(req -> {
                     Debt debt = debtMapper.toModel(req);
+                    debt.setActive(true);
                     debt.setHashSum(debtDuplicationPreventUseCase.getHashSum(debt, debtAccountCode));
                     return debt;
                 })
