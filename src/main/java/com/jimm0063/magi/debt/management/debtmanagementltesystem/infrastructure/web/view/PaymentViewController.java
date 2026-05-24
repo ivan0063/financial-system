@@ -39,10 +39,14 @@ public class PaymentViewController {
     }
 
     @PostMapping("/{debtAccountCode}")
-    public String doPaymentAction(@PathVariable String debtAccountCode, HttpSession session) throws IOException {
+    public String doPaymentAction(@PathVariable String debtAccountCode, HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        var payment = doPayment.cardPayment(debtAccountCode);
-        activityLogHelper.log(session, "Process Payment — " + debtAccountCode, payment);
-        return "redirect:/ui/payments/" + debtAccountCode;
+        try {
+            var payment = doPayment.cardPayment(debtAccountCode);
+            activityLogHelper.log(session, "Process Payment — " + debtAccountCode, payment);
+            return "redirect:/ui/payments/" + debtAccountCode;
+        } catch (IOException e) {
+            return "redirect:/ui/payments/" + debtAccountCode + "?error=payment_failed";
+        }
     }
 }

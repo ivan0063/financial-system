@@ -23,10 +23,14 @@ public class ActivityLogHelper {
         this.objectMapper = objectMapper;
     }
 
-    @SuppressWarnings("unchecked")
     public void log(HttpSession session, String action, Object response) {
-        List<ActivityEntry> log = (List<ActivityEntry>) session.getAttribute("activityLog");
-        if (log == null) log = new ArrayList<>();
+        List<ActivityEntry> log = new ArrayList<>();
+        if (session.getAttribute("activityLog") instanceof List<?> existing) {
+            existing.stream()
+                    .filter(ActivityEntry.class::isInstance)
+                    .map(ActivityEntry.class::cast)
+                    .forEach(log::add);
+        }
 
         String json;
         try {
