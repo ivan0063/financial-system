@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase, FindAllDebtsUseCase, LoadDebtList, DebtDuplicationPreventUseCase {
+public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase, FindAllDebtsUseCase, LoadDebtList, DebtDuplicationPreventUseCase, SourceOfTruthImportUseCase {
     private final DebtRepository debtRepository;
     private final DebtAccountRepository debtAccountRepository;
 
@@ -158,6 +158,22 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
         if (!toDeactivate.isEmpty()) debtRepository.saveAll(toDeactivate);
         if (!toUpdate.isEmpty()) debtRepository.saveAll(toUpdate);
         return debtRepository.saveAll(toSave);
+    }
+
+    @Override
+    public List<Debt> replaceAllWithStatement(List<Debt> incomingDebts, String debtAccountCode) {
+        payOffByDebtAccountCode(debtAccountCode);
+
+        DebtAccount debtAccount = this.debtAccountRepository.findDebtAccountByCodeAndActiveTrue(debtAccountCode)
+                .orElseThrow(() -> new EntityNotFoundException("Debt Account " + debtAccountCode));
+
+        incomingDebts.forEach(d -> {
+            d.setDebtAccount(debtAccount);
+            d.setActive(true);
+            if (d.getHashSum() == null) d.setHashSum(getHashSum(d, debtAccountCode));
+        });
+
+        return debtRepository.saveAll(incomingDebts);
     }
 
     @Override
