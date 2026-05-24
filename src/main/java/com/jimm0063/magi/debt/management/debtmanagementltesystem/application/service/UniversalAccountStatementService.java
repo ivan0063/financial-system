@@ -28,7 +28,7 @@ public class UniversalAccountStatementService implements AccountStatementDataExt
             String text = stripper.getText(document);
 
             Pattern pattern = Pattern.compile(
-                    "(\\d{2}-[a-zA-Z]{3}-\\d{4})\\s+" +       // Date (not used directly)
+                    "(\\d{4}-\\d{2}-\\d{2}|\\d{2}-[a-zA-Z]{3}-\\d{4})\\s+" + // Date (ISO or Spanish)
                             "(.+?)\\s+\\$" +                         // Description (name)
                             "([\\d,]+\\.\\d{2})\\s+\\$" +            // Original amount
                             "([\\d,]+\\.\\d{2})\\s+\\$" +            // Pending balance (not used directly)
@@ -45,7 +45,9 @@ public class UniversalAccountStatementService implements AccountStatementDataExt
                     continue;
                 }
 
-                if (startParsing && (line.contains("---") || line.contains("CARGOS,COMPRAS Y ABONOS REGULARES"))) {
+                if (startParsing && (line.contains("---")
+                        || line.contains("CARGOS,COMPRAS Y ABONOS REGULARES")
+                        || line.contains("COMPRAS Y CARGOS DIFERIDOS A MESES CON INTERESES"))) {
                     break;
                 }
 
