@@ -138,16 +138,20 @@
                 <thead class="table-warning">
                 <tr>
                     <th>Description</th>
-                    <th>Previous</th>
-                    <th>New</th>
+                    <th>Installment</th>
                     <th>Progress</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr th:each="update : ${preview.installmentUpdates()}">
                     <td th:text="${update.debt.description}"></td>
-                    <td class="text-muted" th:text="${update.previousInstallment}"></td>
-                    <td class="fw-semibold text-success" th:text="${update.newInstallment}"></td>
+                    <td class="text-nowrap">
+                        <span class="badge rounded-pill text-bg-danger text-decoration-line-through me-1"
+                              th:text="${update.previousInstallment}"></span>
+                        <i class="bi bi-arrow-right text-muted small"></i>
+                        <span class="badge rounded-pill text-bg-success ms-1"
+                              th:text="${update.newInstallment}"></span>
+                    </td>
                     <td style="min-width:160px"
                         th:if="${update.debt.maxFinancingTerm != null and update.debt.maxFinancingTerm > 0}">
                         <div class="d-flex align-items-center gap-1">
