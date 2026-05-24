@@ -86,7 +86,9 @@ public class AccountStatementViewController {
         AccountStatementPreviewDto preview =
                 (AccountStatementPreviewDto) session.getAttribute("statementPreview");
         if (preview == null) return "redirect:/ui/statements/" + debtAccountCode;
-        model.addAttribute("preview", preview);
+        // Pre-extract record components so the template uses plain List bindings
+        model.addAttribute("newDebts", preview.newDebts());
+        model.addAttribute("installmentUpdates", preview.installmentUpdates());
         model.addAttribute("debtAccountCode", debtAccountCode);
         model.addAttribute("form", new DebtListForm());
         return "statements/preview";
