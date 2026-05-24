@@ -79,7 +79,7 @@
             <!-- Month row -->
             <div class="d-flex align-items-start mb-1">
                 <!-- Dot -->
-                <div th:classappend="${entry.cards.stream().anyMatch(c -> !c.closingDebts().isEmpty())} ? 'bg-success' : 'bg-primary'"
+                <div th:classappend="${entry.hasClosingDebts()} ? 'bg-success' : 'bg-primary'"
                      class="timeline-dot flex-shrink-0 d-flex align-items-center justify-content-center text-white me-3 mt-1">
                 </div>
 

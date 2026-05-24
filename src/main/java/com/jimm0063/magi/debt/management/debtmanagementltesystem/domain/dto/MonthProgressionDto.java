@@ -9,4 +9,8 @@ public record MonthProgressionDto(
         String displayName,
         BigDecimal totalPayment,
         List<CardProgressionDto> cards
-) {}
+) {
+    public boolean hasClosingDebts() {
+        return cards.stream().anyMatch(c -> !c.closingDebts().isEmpty());
+    }
+}
