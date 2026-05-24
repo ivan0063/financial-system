@@ -121,6 +121,7 @@
                         <th style="min-width:110px">Monthly</th>
                         <th style="min-width:75px">Inst.</th>
                         <th style="min-width:75px">Max</th>
+                        <th style="min-width:120px">Type</th>
                         <th style="width:46px"></th>
                     </tr>
                     </thead>
@@ -162,6 +163,15 @@
                                    th:name="|debts[${iterStat.index}].maxFinancingTerm|"
                                    th:value="${debt.maxFinancingTerm}"
                                    class="form-control form-control-sm">
+                        </td>
+                        <td>
+                            <select th:name="|debts[${iterStat.index}].debtType|"
+                                    class="form-select form-select-sm">
+                                <option th:each="dtype : ${debtTypes}"
+                                        th:value="${dtype}"
+                                        th:text="${dtype}"
+                                        th:selected="${dtype == debt.debtType}"></option>
+                            </select>
                         </td>
                         <td class="text-center">
                             <button type="button" class="btn btn-sm btn-outline-danger border-0"

@@ -8,6 +8,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountStatementPreviewDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.AccountStatementType;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.mapper.DebtMapper;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.model.DebtListForm;
@@ -93,6 +94,7 @@ public class AccountStatementViewController {
         model.addAttribute("currentDebts", findAllDebtsUseCase.getActiveByDebtAccount(debtAccountCode));
         model.addAttribute("newDebts", preview.newDebts());
         model.addAttribute("installmentUpdates", preview.installmentUpdates());
+        model.addAttribute("debtTypes", DebtTypeEnum.values());
         model.addAttribute("debtAccountCode", debtAccountCode);
         model.addAttribute("form", new DebtListForm());
         return "statements/preview";
