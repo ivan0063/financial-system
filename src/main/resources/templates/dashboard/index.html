@@ -159,14 +159,17 @@
                     <td th:text="${debt.description}"></td>
                     <td th:text="${'$' + #numbers.formatDecimal(debt.monthlyPayment, 1, 2)}"></td>
                     <td style="min-width: 160px;">
-                        <div class="d-flex align-items-center gap-2">
+                        <div th:if="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
+                             class="d-flex align-items-center gap-2">
                             <div class="progress flex-grow-1" style="height: 8px;">
                                 <div class="progress-bar bg-success"
-                                     th:style="${'width: ' + (debt.currentInstallment * 100 / debt.maxFinancingTerm) + '%'}"></div>
+                                     th:style="|width: ${debt.currentInstallment * 100 / debt.maxFinancingTerm}%|"></div>
                             </div>
                             <small class="text-muted text-nowrap"
                                    th:text="${debt.currentInstallment + '/' + debt.maxFinancingTerm}"></small>
                         </div>
+                        <span th:unless="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
+                              class="text-muted small">&#8212;</span>
                     </td>
                 </tr>
                 </tbody>

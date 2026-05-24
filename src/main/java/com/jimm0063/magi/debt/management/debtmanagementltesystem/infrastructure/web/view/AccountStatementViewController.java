@@ -73,24 +73,29 @@ public class AccountStatementViewController {
             @PathVariable String debtAccountCode,
             @RequestParam("file") MultipartFile file,
             @RequestParam AccountStatementType accountStatementType,
-            HttpSession session) throws IOException {
+            HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
-                .stream()
-                .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
-                .toList();
-        AccountStatementPreviewDto preview = filterDebtsUseCase.previewAccountStatement(debts, debtAccountCode);
-        session.setAttribute("statementPreview", preview);
-        activityLogHelper.log(session, "Extract — " + debtAccountCode, preview);
-        return "redirect:/ui/statements/" + debtAccountCode + "/preview";
+        try {
+            List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
+                    .stream()
+                    .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
+                    .toList();
+            AccountStatementPreviewDto preview = filterDebtsUseCase.previewAccountStatement(debts, debtAccountCode);
+            session.setAttribute("statementPreview", preview);
+            activityLogHelper.log(session, "Extract — " + debtAccountCode, preview);
+            return "redirect:/ui/statements/" + debtAccountCode + "/preview";
+        } catch (IOException e) {
+            return "redirect:/ui/statements/" + debtAccountCode + "?error=parse_failed";
+        } catch (IllegalArgumentException e) {
+            return "redirect:/ui/statements/" + debtAccountCode + "?error=missing_fields";
+        }
     }
 
     @GetMapping("/{debtAccountCode}/preview")
     public String preview(@PathVariable String debtAccountCode, HttpSession session, Model model) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        AccountStatementPreviewDto preview =
-                (AccountStatementPreviewDto) session.getAttribute("statementPreview");
-        if (preview == null) return "redirect:/ui/statements/" + debtAccountCode;
+        if (!(session.getAttribute("statementPreview") instanceof AccountStatementPreviewDto preview))
+            return "redirect:/ui/statements/" + debtAccountCode;
         model.addAttribute("currentDebts", findAllDebtsUseCase.getActiveByDebtAccount(debtAccountCode));
         model.addAttribute("newDebts", preview.newDebts());
         model.addAttribute("installmentUpdates", preview.installmentUpdates());
@@ -128,15 +133,21 @@ public class AccountStatementViewController {
             @PathVariable String debtAccountCode,
             @RequestParam("file") MultipartFile file,
             @RequestParam AccountStatementType accountStatementType,
-            HttpSession session) throws IOException {
+            HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
-                .stream()
-                .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
-                .toList();
-        filterDebtsUseCase.deactivateObsoleteDebts(debts, debtAccountCode);
-        List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
-        activityLogHelper.log(session, "Full Sync — " + debtAccountCode, saved);
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        try {
+            List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
+                    .stream()
+                    .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
+                    .toList();
+            filterDebtsUseCase.deactivateObsoleteDebts(debts, debtAccountCode);
+            List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
+            activityLogHelper.log(session, "Full Sync — " + debtAccountCode, saved);
+            return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        } catch (IOException e) {
+            return "redirect:/ui/statements/" + debtAccountCode + "?error=parse_failed";
+        } catch (IllegalArgumentException e) {
+            return "redirect:/ui/statements/" + debtAccountCode + "?error=missing_fields";
+        }
     }
 }

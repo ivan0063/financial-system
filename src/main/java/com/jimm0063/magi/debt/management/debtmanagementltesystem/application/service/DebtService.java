@@ -142,6 +142,10 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
 
     @Override
     public String getHashSum(Debt debt, String debtAccountCode) {
+        if (debt.getMonthlyPayment() == null)
+            throw new IllegalArgumentException("monthlyPayment is required to compute hash for debt: " + debt.getDescription());
+        if (debt.getMaxFinancingTerm() == null)
+            throw new IllegalArgumentException("maxFinancingTerm is required to compute hash for debt: " + debt.getDescription());
         String monthAmountTrim = debt.getMonthlyPayment().setScale(2, RoundingMode.UNNECESSARY)
                 .movePointRight(2)
                 .toPlainString();
