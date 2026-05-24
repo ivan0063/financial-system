@@ -5,6 +5,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FilterDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FindAllDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.LoadDebtList;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.SourceOfTruthImportUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountStatementPreviewDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.AccountStatementType;
@@ -34,6 +35,7 @@ public class AccountStatementViewController {
     private final FilterDebtsUseCase filterDebtsUseCase;
     private final DebtDuplicationPreventUseCase debtDuplicationPreventUseCase;
     private final LoadDebtList loadDebtList;
+    private final SourceOfTruthImportUseCase sourceOfTruthImportUseCase;
     private final DebtMapper debtMapper;
     private final DebtAccountRepository debtAccountRepository;
     private final FindAllDebtsUseCase findAllDebtsUseCase;
@@ -44,6 +46,7 @@ public class AccountStatementViewController {
             FilterDebtsUseCase filterDebtsUseCase,
             DebtDuplicationPreventUseCase debtDuplicationPreventUseCase,
             LoadDebtList loadDebtList,
+            SourceOfTruthImportUseCase sourceOfTruthImportUseCase,
             DebtMapper debtMapper,
             DebtAccountRepository debtAccountRepository,
             FindAllDebtsUseCase findAllDebtsUseCase,
@@ -52,6 +55,7 @@ public class AccountStatementViewController {
         this.filterDebtsUseCase = filterDebtsUseCase;
         this.debtDuplicationPreventUseCase = debtDuplicationPreventUseCase;
         this.loadDebtList = loadDebtList;
+        this.sourceOfTruthImportUseCase = sourceOfTruthImportUseCase;
         this.debtMapper = debtMapper;
         this.debtAccountRepository = debtAccountRepository;
         this.findAllDebtsUseCase = findAllDebtsUseCase;
@@ -127,6 +131,28 @@ public class AccountStatementViewController {
         activityLogHelper.log(session, "Add debts — " + debtAccountCode, saved);
         session.removeAttribute("statementPreview");
         return "redirect:/ui/debt-accounts/" + debtAccountCode;
+    }
+
+    @PostMapping("/{debtAccountCode}/replace")
+    public String replace(
+            @PathVariable String debtAccountCode,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam AccountStatementType accountStatementType,
+            HttpSession session) {
+        if (session.getAttribute("userEmail") == null) return "redirect:/ui";
+        try {
+            List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
+                    .stream()
+                    .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
+                    .toList();
+            List<Debt> saved = sourceOfTruthImportUseCase.replaceAllWithStatement(debts, debtAccountCode);
+            activityLogHelper.log(session, "Source of Truth Replace — " + debtAccountCode, saved);
+            return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        } catch (IOException e) {
+            return "redirect:/ui/statements/" + debtAccountCode + "?error=parse_failed";
+        } catch (IllegalArgumentException e) {
+            return "redirect:/ui/statements/" + debtAccountCode + "?error=missing_fields";
+        }
     }
 
     @PostMapping("/{debtAccountCode}/sync")
