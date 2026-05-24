@@ -3,6 +3,7 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.DebtDuplicationPreventUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.ExtractFromFileUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FilterDebtsUseCase;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FindAllDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.LoadDebtList;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountStatementPreviewDto;
@@ -34,6 +35,7 @@ public class AccountStatementViewController {
     private final LoadDebtList loadDebtList;
     private final DebtMapper debtMapper;
     private final DebtAccountRepository debtAccountRepository;
+    private final FindAllDebtsUseCase findAllDebtsUseCase;
     private final ActivityLogHelper activityLogHelper;
 
     public AccountStatementViewController(
@@ -43,6 +45,7 @@ public class AccountStatementViewController {
             LoadDebtList loadDebtList,
             DebtMapper debtMapper,
             DebtAccountRepository debtAccountRepository,
+            FindAllDebtsUseCase findAllDebtsUseCase,
             ActivityLogHelper activityLogHelper) {
         this.extractFromFileUseCase = extractFromFileUseCase;
         this.filterDebtsUseCase = filterDebtsUseCase;
@@ -50,6 +53,7 @@ public class AccountStatementViewController {
         this.loadDebtList = loadDebtList;
         this.debtMapper = debtMapper;
         this.debtAccountRepository = debtAccountRepository;
+        this.findAllDebtsUseCase = findAllDebtsUseCase;
         this.activityLogHelper = activityLogHelper;
     }
 
@@ -86,7 +90,7 @@ public class AccountStatementViewController {
         AccountStatementPreviewDto preview =
                 (AccountStatementPreviewDto) session.getAttribute("statementPreview");
         if (preview == null) return "redirect:/ui/statements/" + debtAccountCode;
-        // Pre-extract record components so the template uses plain List bindings
+        model.addAttribute("currentDebts", findAllDebtsUseCase.getActiveByDebtAccount(debtAccountCode));
         model.addAttribute("newDebts", preview.newDebts());
         model.addAttribute("installmentUpdates", preview.installmentUpdates());
         model.addAttribute("debtAccountCode", debtAccountCode);
