@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.Map;
+
 @Controller
 @RequestMapping("/ui/fixed-expenses")
 public class FixedExpenseViewController {
@@ -26,18 +28,21 @@ public class FixedExpenseViewController {
     private final FixedExpenseCatalogMapper fixedExpenseCatalogMapper;
     private final FindAllFixedExpenseUseCase findAllFixedExpenseUseCase;
     private final FindAllFixedExpenseCatalogsUseCase findAllFixedExpenseCatalogsUseCase;
+    private final ActivityLogHelper activityLogHelper;
 
     public FixedExpenseViewController(
             FixedExpenseRepository fixedExpenseRepository,
             FixedExpenseCatalogRepository fixedExpenseCatalogRepository,
             FixedExpenseCatalogMapper fixedExpenseCatalogMapper,
             FindAllFixedExpenseUseCase findAllFixedExpenseUseCase,
-            FindAllFixedExpenseCatalogsUseCase findAllFixedExpenseCatalogsUseCase) {
+            FindAllFixedExpenseCatalogsUseCase findAllFixedExpenseCatalogsUseCase,
+            ActivityLogHelper activityLogHelper) {
         this.fixedExpenseRepository = fixedExpenseRepository;
         this.fixedExpenseCatalogRepository = fixedExpenseCatalogRepository;
         this.fixedExpenseCatalogMapper = fixedExpenseCatalogMapper;
         this.findAllFixedExpenseUseCase = findAllFixedExpenseUseCase;
         this.findAllFixedExpenseCatalogsUseCase = findAllFixedExpenseCatalogsUseCase;
+        this.activityLogHelper = activityLogHelper;
     }
 
     @GetMapping
@@ -57,25 +62,29 @@ public class FixedExpenseViewController {
         String email = (String) session.getAttribute("userEmail");
         if (email == null) return "redirect:/ui";
         req.setUserEmail(email);
-        fixedExpenseRepository.save(req, req.getCatalogId());
+        var saved = fixedExpenseRepository.save(req, req.getCatalogId());
+        activityLogHelper.log(session, "Create Fixed Expense", saved);
         return "redirect:/ui/fixed-expenses";
     }
 
     @DeleteMapping("/{id}")
-    public String deleteExpense(@PathVariable Integer id) {
+    public String deleteExpense(@PathVariable Integer id, HttpSession session) {
         fixedExpenseRepository.delete(id);
+        activityLogHelper.log(session, "Delete Fixed Expense", Map.of("deleted", true, "id", id));
         return "redirect:/ui/fixed-expenses";
     }
 
     @PostMapping("/catalog")
-    public String createCatalog(@ModelAttribute CreateFixedExpenseCatalogReq req) {
-        fixedExpenseCatalogRepository.save(fixedExpenseCatalogMapper.toModel(req));
+    public String createCatalog(@ModelAttribute CreateFixedExpenseCatalogReq req, HttpSession session) {
+        var saved = fixedExpenseCatalogRepository.save(fixedExpenseCatalogMapper.toModel(req));
+        activityLogHelper.log(session, "Create Expense Catalog", saved);
         return "redirect:/ui/fixed-expenses";
     }
 
     @DeleteMapping("/catalog/{id}")
-    public String deleteCatalog(@PathVariable Integer id) {
+    public String deleteCatalog(@PathVariable Integer id, HttpSession session) {
         fixedExpenseCatalogRepository.delete(id);
+        activityLogHelper.log(session, "Delete Expense Catalog", Map.of("deleted", true, "id", id));
         return "redirect:/ui/fixed-expenses";
     }
 }

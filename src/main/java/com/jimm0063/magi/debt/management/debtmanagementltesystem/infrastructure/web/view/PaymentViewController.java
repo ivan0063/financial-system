@@ -18,10 +18,14 @@ public class PaymentViewController {
 
     private final DoPayment doPayment;
     private final PaymentRepository paymentRepository;
+    private final ActivityLogHelper activityLogHelper;
 
-    public PaymentViewController(DoPayment doPayment, PaymentRepository paymentRepository) {
+    public PaymentViewController(DoPayment doPayment,
+                                 PaymentRepository paymentRepository,
+                                 ActivityLogHelper activityLogHelper) {
         this.doPayment = doPayment;
         this.paymentRepository = paymentRepository;
+        this.activityLogHelper = activityLogHelper;
     }
 
     @GetMapping("/{debtAccountCode}")
@@ -37,7 +41,8 @@ public class PaymentViewController {
     @PostMapping("/{debtAccountCode}")
     public String doPaymentAction(@PathVariable String debtAccountCode, HttpSession session) throws IOException {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        doPayment.cardPayment(debtAccountCode);
+        var payment = doPayment.cardPayment(debtAccountCode);
+        activityLogHelper.log(session, "Process Payment — " + debtAccountCode, payment);
         return "redirect:/ui/payments/" + debtAccountCode;
     }
 }

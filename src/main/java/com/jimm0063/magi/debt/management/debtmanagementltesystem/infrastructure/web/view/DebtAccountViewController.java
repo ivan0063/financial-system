@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Map;
+
 @Controller
 @RequestMapping("/ui/debt-accounts")
 public class DebtAccountViewController {
@@ -27,18 +29,21 @@ public class DebtAccountViewController {
     private final FindAllDebtAccountUseCase findAllDebtAccountUseCase;
     private final FindAllDebtsUseCase findAllDebtsUseCase;
     private final DebtAccountStatusUseCase debtAccountStatusUseCase;
+    private final ActivityLogHelper activityLogHelper;
 
     public DebtAccountViewController(
             DebtAccountRepository debtAccountRepository,
             DebtAccountMapper debtAccountMapper,
             FindAllDebtAccountUseCase findAllDebtAccountUseCase,
             FindAllDebtsUseCase findAllDebtsUseCase,
-            DebtAccountStatusUseCase debtAccountStatusUseCase) {
+            DebtAccountStatusUseCase debtAccountStatusUseCase,
+            ActivityLogHelper activityLogHelper) {
         this.debtAccountRepository = debtAccountRepository;
         this.debtAccountMapper = debtAccountMapper;
         this.findAllDebtAccountUseCase = findAllDebtAccountUseCase;
         this.findAllDebtsUseCase = findAllDebtsUseCase;
         this.debtAccountStatusUseCase = debtAccountStatusUseCase;
+        this.activityLogHelper = activityLogHelper;
     }
 
     @GetMapping
@@ -58,16 +63,20 @@ public class DebtAccountViewController {
                                 @PathVariable String providerCode,
                                 HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        debtAccountRepository.save(debtAccountMapper.toModel(req), providerCode);
+        var saved = debtAccountRepository.save(debtAccountMapper.toModel(req), providerCode);
+        activityLogHelper.log(session, "Create Debt Account", saved);
         return "redirect:/ui/debt-accounts?providerCode=" + providerCode;
     }
 
     @DeleteMapping("/{code}")
     public String deleteAccount(@PathVariable String code,
-                                @RequestParam(required = false) String providerCode) {
+                                @RequestParam(required = false) String providerCode,
+                                HttpSession session) {
         debtAccountRepository.delete(code);
-        String redirect = providerCode != null ? "redirect:/ui/debt-accounts?providerCode=" + providerCode : "redirect:/ui/dashboard";
-        return redirect;
+        activityLogHelper.log(session, "Delete Debt Account", Map.of("deleted", true, "code", code));
+        return providerCode != null
+                ? "redirect:/ui/debt-accounts?providerCode=" + providerCode
+                : "redirect:/ui/dashboard";
     }
 
     @GetMapping("/{code}")
