@@ -99,6 +99,7 @@ public class AccountStatementViewController {
         model.addAttribute("currentDebts", findAllDebtsUseCase.getActiveByDebtAccount(debtAccountCode));
         model.addAttribute("newDebts", preview.newDebts());
         model.addAttribute("installmentUpdates", preview.installmentUpdates());
+        model.addAttribute("completedDebts", preview.completedDebts());
         model.addAttribute("debtTypes", DebtTypeEnum.values());
         model.addAttribute("debtAccountCode", debtAccountCode);
         model.addAttribute("form", new DebtListForm());
