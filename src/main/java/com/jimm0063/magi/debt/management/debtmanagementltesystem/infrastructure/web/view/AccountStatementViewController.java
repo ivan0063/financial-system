@@ -72,6 +72,7 @@ public class AccountStatementViewController {
         return "statements/upload";
     }
 
+    /** Step 1 — parse the file, store raw debts + preview in session, redirect to preview. */
     @PostMapping("/{debtAccountCode}/extract")
     public String extract(
             @PathVariable String debtAccountCode,
@@ -85,6 +86,7 @@ public class AccountStatementViewController {
                     .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
                     .toList();
             AccountStatementPreviewDto preview = filterDebtsUseCase.previewAccountStatement(debts, debtAccountCode);
+            session.setAttribute("extractedDebts", debts);
             session.setAttribute("statementPreview", preview);
             activityLogHelper.log(session, "Extract — " + debtAccountCode, preview);
             return "redirect:/ui/statements/" + debtAccountCode + "/preview";
@@ -110,6 +112,7 @@ public class AccountStatementViewController {
         return "statements/preview";
     }
 
+    /** Persist option A — save only new/selected debts (user-editable form). */
     @PostMapping("/{debtAccountCode}/add")
     public String add(
             @PathVariable String debtAccountCode,
@@ -129,52 +132,43 @@ public class AccountStatementViewController {
                 .toList();
         List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
         activityLogHelper.log(session, "Add debts — " + debtAccountCode, saved);
-        session.removeAttribute("statementPreview");
+        clearSession(session);
         return "redirect:/ui/debt-accounts/" + debtAccountCode;
     }
 
-    @PostMapping("/{debtAccountCode}/replace")
-    public String replace(
-            @PathVariable String debtAccountCode,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam AccountStatementType accountStatementType,
-            HttpSession session) {
+    /** Persist option B — deactivate obsolete debts then save/update from extracted list. */
+    @PostMapping("/{debtAccountCode}/sync")
+    public String sync(@PathVariable String debtAccountCode, HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        try {
-            List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
-                    .stream()
-                    .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
-                    .toList();
-            List<Debt> saved = sourceOfTruthImportUseCase.replaceAllWithStatement(debts, debtAccountCode);
-            activityLogHelper.log(session, "Source of Truth Replace — " + debtAccountCode, saved);
-            return "redirect:/ui/debt-accounts/" + debtAccountCode;
-        } catch (IOException e) {
-            return "redirect:/ui/statements/" + debtAccountCode + "?error=parse_failed";
-        } catch (IllegalArgumentException e) {
-            return "redirect:/ui/statements/" + debtAccountCode + "?error=missing_fields";
-        }
+        List<Debt> debts = getExtractedDebts(session);
+        if (debts == null) return "redirect:/ui/statements/" + debtAccountCode;
+        filterDebtsUseCase.deactivateObsoleteDebts(debts, debtAccountCode);
+        List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
+        activityLogHelper.log(session, "Full Sync — " + debtAccountCode, saved);
+        clearSession(session);
+        return "redirect:/ui/debt-accounts/" + debtAccountCode;
     }
 
-    @PostMapping("/{debtAccountCode}/sync")
-    public String sync(
-            @PathVariable String debtAccountCode,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam AccountStatementType accountStatementType,
-            HttpSession session) {
+    /** Persist option C — wipe all existing debts and import statement as source of truth. */
+    @PostMapping("/{debtAccountCode}/replace")
+    public String replace(@PathVariable String debtAccountCode, HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        try {
-            List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
-                    .stream()
-                    .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
-                    .toList();
-            filterDebtsUseCase.deactivateObsoleteDebts(debts, debtAccountCode);
-            List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
-            activityLogHelper.log(session, "Full Sync — " + debtAccountCode, saved);
-            return "redirect:/ui/debt-accounts/" + debtAccountCode;
-        } catch (IOException e) {
-            return "redirect:/ui/statements/" + debtAccountCode + "?error=parse_failed";
-        } catch (IllegalArgumentException e) {
-            return "redirect:/ui/statements/" + debtAccountCode + "?error=missing_fields";
-        }
+        List<Debt> debts = getExtractedDebts(session);
+        if (debts == null) return "redirect:/ui/statements/" + debtAccountCode;
+        List<Debt> saved = sourceOfTruthImportUseCase.replaceAllWithStatement(debts, debtAccountCode);
+        activityLogHelper.log(session, "Source of Truth Replace — " + debtAccountCode, saved);
+        clearSession(session);
+        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Debt> getExtractedDebts(HttpSession session) {
+        Object attr = session.getAttribute("extractedDebts");
+        return (attr instanceof List<?>) ? (List<Debt>) attr : null;
+    }
+
+    private void clearSession(HttpSession session) {
+        session.removeAttribute("extractedDebts");
+        session.removeAttribute("statementPreview");
     }
 }
