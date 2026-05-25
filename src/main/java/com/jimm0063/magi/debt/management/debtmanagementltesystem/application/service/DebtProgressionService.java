@@ -33,9 +33,12 @@ public class DebtProgressionService implements GetDebtProgressionUseCase {
     public List<MonthProgressionDto> getProgression(String email, YearMonth targetMonth) {
         List<Debt> allDebts = debtRepository.findAllDebtsByUser(email);
 
-        Map<DebtAccount, List<Debt>> byAccount = new LinkedHashMap<>();
+        Map<String, List<Debt>> byAccountCode = new LinkedHashMap<>();
+        Map<String, DebtAccount> accountByCode = new LinkedHashMap<>();
         for (Debt debt : allDebts) {
-            byAccount.computeIfAbsent(debt.getDebtAccount(), k -> new ArrayList<>()).add(debt);
+            String code = debt.getDebtAccount().getCode();
+            byAccountCode.computeIfAbsent(code, k -> new ArrayList<>()).add(debt);
+            accountByCode.putIfAbsent(code, debt.getDebtAccount());
         }
 
         YearMonth current = YearMonth.now();
@@ -47,8 +50,8 @@ public class DebtProgressionService implements GetDebtProgressionUseCase {
             List<CardProgressionDto> cards = new ArrayList<>();
             BigDecimal totalPayment = BigDecimal.ZERO;
 
-            for (Map.Entry<DebtAccount, List<Debt>> entry : byAccount.entrySet()) {
-                DebtAccount account = entry.getKey();
+            for (Map.Entry<String, List<Debt>> entry : byAccountCode.entrySet()) {
+                DebtAccount account = accountByCode.get(entry.getKey());
                 List<Debt> debts = entry.getValue();
 
                 List<Debt> closingDebts = debts.stream()
