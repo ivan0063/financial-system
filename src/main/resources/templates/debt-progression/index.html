@@ -97,38 +97,48 @@
                             <td colspan="3" class="detail-row p-0">
                                 <div class="collapse" th:id="'detail-' + ${iterStat.index}">
                                     <div class="p-3">
-                                        <table class="table table-sm table-bordered mb-0 bg-white">
-                                            <thead class="table-secondary">
-                                                <tr>
-                                                    <th>Tarjeta</th>
-                                                    <th>Pago</th>
-                                                    <th>Deudas que cierran</th>
-                                                    <th class="text-center">Activas</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr th:each="card : ${entry.cards}">
-                                                    <td>
-                                                        <span class="fw-semibold" th:text="${card.accountName}">Card</span>
-                                                        <br>
-                                                        <small class="text-muted font-monospace" th:text="${card.accountCode}"></small>
-                                                    </td>
-                                                    <td class="fw-semibold"
-                                                        th:text="${'$' + #numbers.formatDecimal(card.cardPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
-                                                    <td>
-                                                        <span th:if="${card.closingDebts().isEmpty()}" class="text-muted small">—</span>
-                                                        <div th:unless="${card.closingDebts().isEmpty()}" class="d-flex flex-wrap gap-1">
-                                                            <span th:each="debt : ${card.closingDebts()}"
-                                                                  class="badge bg-success"
-                                                                  th:text="${debt.description}">Deuda</span>
-                                                        </div>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-secondary" th:text="${card.activeDebtCount()}">0</span>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+
+                                        <!-- Section 1: Closing debts -->
+                                        <div class="mb-3">
+                                            <span class="fw-semibold">
+                                                Deudas que cierran este mes:
+                                                <span th:text="${entry.allClosingDebts().size()}">0</span>
+                                            </span>
+                                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                                <span th:if="${entry.allClosingDebts().isEmpty()}" class="text-muted small">Ninguna</span>
+                                                <span th:each="debt : ${entry.allClosingDebts()}"
+                                                      class="badge bg-success"
+                                                      th:text="${debt.description}">Deuda</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Section 2: Remaining debts count -->
+                                        <div class="mb-3">
+                                            <span class="fw-semibold">Deudas restantes: </span>
+                                            <span class="badge bg-secondary" th:text="${entry.totalActiveDebtCount()}">0</span>
+                                        </div>
+
+                                        <!-- Section 3: Card payments breakdown -->
+                                        <div>
+                                            <span class="fw-semibold d-block mb-2">Pagos por tarjeta:</span>
+                                            <table class="table table-sm table-borderless mb-0 bg-white" style="max-width: 400px;">
+                                                <tbody>
+                                                    <tr th:each="card : ${entry.cards}">
+                                                        <td th:text="${card.accountName}">Tarjeta</td>
+                                                        <td class="text-end fw-semibold"
+                                                            th:text="${'$' + #numbers.formatDecimal(card.cardPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                                                    </tr>
+                                                </tbody>
+                                                <tfoot class="border-top">
+                                                    <tr>
+                                                        <td class="fw-bold">Total</td>
+                                                        <td class="text-end fw-bold"
+                                                            th:text="${'$' + #numbers.formatDecimal(entry.totalPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+
                                     </div>
                                 </div>
                             </td>
