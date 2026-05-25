@@ -2,6 +2,8 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.PayOffDebtAccountUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtRepository;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.mapper.DebtMapper;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.model.CreateDebtReq;
 import jakarta.servlet.http.HttpSession;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Controller
@@ -50,6 +53,34 @@ public class DebtViewController {
                              HttpSession session) {
         debtRepository.delete(debtId);
         activityLogHelper.log(session, "Delete Debt", Map.of("deleted", true, "id", debtId));
+        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+    }
+
+    @PostMapping("/{debtId}/update")
+    public String updateDebt(
+            @PathVariable Integer debtId,
+            @RequestParam String debtAccountCode,
+            @RequestParam String description,
+            @RequestParam(required = false) String operationDate,
+            @RequestParam(required = false) BigDecimal originalAmount,
+            @RequestParam BigDecimal monthlyPayment,
+            @RequestParam Integer currentInstallment,
+            @RequestParam Integer maxFinancingTerm,
+            @RequestParam DebtTypeEnum debtType,
+            HttpSession session) {
+        if (session.getAttribute("userEmail") == null) return "redirect:/ui";
+        Debt debt = new Debt();
+        debt.setId(debtId);
+        debt.setDescription(description);
+        debt.setOperationDate(operationDate);
+        debt.setOriginalAmount(originalAmount);
+        debt.setMonthlyPayment(monthlyPayment);
+        debt.setCurrentInstallment(currentInstallment);
+        debt.setMaxFinancingTerm(maxFinancingTerm);
+        debt.setDebtType(debtType);
+        debt.setActive(true);
+        var updated = debtRepository.update(debt);
+        activityLogHelper.log(session, "Update Debt — " + debtId, updated);
         return "redirect:/ui/debt-accounts/" + debtAccountCode;
     }
 

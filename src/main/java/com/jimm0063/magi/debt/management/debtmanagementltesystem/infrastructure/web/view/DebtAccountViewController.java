@@ -5,6 +5,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FindAllDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.AccountStatementType;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.mapper.DebtAccountMapper;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.model.CreateDebtAccountReq;
 import jakarta.servlet.http.HttpSession;
@@ -87,6 +88,7 @@ public class DebtAccountViewController {
         model.addAttribute("debts", findAllDebtsUseCase.getActiveByDebtAccount(code));
         model.addAttribute("status", debtAccountStatusUseCase.getStatus(code));
         model.addAttribute("debtAccountCode", code);
+        model.addAttribute("debtTypes", DebtTypeEnum.values());
         model.addAttribute("email", email);
         return "debt-accounts/detail";
     }
