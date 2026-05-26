@@ -94,7 +94,9 @@ public class DebtAccountViewController {
         List<Debt> debts = findAllDebtsUseCase.getActiveByDebtAccount(code);
 
         Map<DebtTypeEnum, List<Debt>> debtsByType = debts.stream()
-                .collect(Collectors.groupingBy(Debt::getDebtType, LinkedHashMap::new, Collectors.toList()));
+                .collect(Collectors.groupingBy(
+                        d -> d.getDebtType() != null ? d.getDebtType() : DebtTypeEnum.CARD,
+                        LinkedHashMap::new, Collectors.toList()));
 
         Map<DebtTypeEnum, BigDecimal> typeSubtotals = new LinkedHashMap<>();
         debtsByType.forEach((type, list) -> {
