@@ -19,7 +19,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
+
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/ui/debt-accounts")
@@ -84,8 +90,29 @@ public class DebtAccountViewController {
     public String detail(@PathVariable String code, HttpSession session, Model model) {
         String email = (String) session.getAttribute("userEmail");
         if (email == null) return "redirect:/ui";
+
+        List<Debt> debts = findAllDebtsUseCase.getActiveByDebtAccount(code);
+
+        Map<DebtTypeEnum, List<Debt>> debtsByType = debts.stream()
+                .collect(Collectors.groupingBy(Debt::getDebtType, LinkedHashMap::new, Collectors.toList()));
+
+        Map<DebtTypeEnum, BigDecimal> typeSubtotals = new LinkedHashMap<>();
+        debtsByType.forEach((type, list) -> {
+            BigDecimal subtotal = list.stream()
+                    .filter(d -> d.getMonthlyPayment() != null)
+                    .map(Debt::getMonthlyPayment)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            typeSubtotals.put(type, subtotal);
+        });
+
+        BigDecimal totalMonthlyPayment = typeSubtotals.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         model.addAttribute("account", debtAccountRepository.findDebtAccountByCodeAndActiveTrue(code).orElse(null));
-        model.addAttribute("debts", findAllDebtsUseCase.getActiveByDebtAccount(code));
+        model.addAttribute("debts", debts);
+        model.addAttribute("debtsByType", debtsByType);
+        model.addAttribute("typeSubtotals", typeSubtotals);
+        model.addAttribute("totalMonthlyPayment", totalMonthlyPayment);
         model.addAttribute("status", debtAccountStatusUseCase.getStatus(code));
         model.addAttribute("debtAccountCode", code);
         model.addAttribute("debtTypes", DebtTypeEnum.values());

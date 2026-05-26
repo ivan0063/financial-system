@@ -88,6 +88,10 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
                 .sum();
 
 
+        Double totalMonthlyDebt = debtMonthAmount + debtLoanAmount + debtForLifePlanAmount;
+        Double availableIncome = (user.getSalary() != null ? user.getSalary() : 0.0)
+                - totalMonthlyDebt - fixedExpensesMonthAmount;
+
         UserStatusDashboard response = new UserStatusDashboard();
         response.setSalary(user.getSalary());
         response.setSavings(user.getSavings());
@@ -99,6 +103,8 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
         response.setDebtForLifePlanAmount(debtForLifePlanAmount);
         response.setDebtLoanAmount(debtLoanAmount);
         response.setMonthlyFixedExpensesAmount(fixedExpensesMonthAmount);
+        response.setTotalMonthlyDebt(totalMonthlyDebt);
+        response.setAvailableIncome(availableIncome);
 
         return response;
     }

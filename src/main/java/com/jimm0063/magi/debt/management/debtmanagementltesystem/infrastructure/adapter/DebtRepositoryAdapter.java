@@ -86,8 +86,17 @@ public class DebtRepositoryAdapter implements DebtRepository {
 
     @Override
     public Debt update(Debt debt) {
-        DebtEntity debtEntity = debtMapper.toEntity(debt);
-        return debtMapper.toModel(this.debtJpaRepository.save(debtEntity));
+        DebtEntity existing = debtJpaRepository.findById(debt.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Debt " + debt.getId() + " not found"));
+        existing.setDescription(debt.getDescription());
+        existing.setOperationDate(debt.getOperationDate());
+        existing.setOriginalAmount(debt.getOriginalAmount());
+        existing.setMonthlyPayment(debt.getMonthlyPayment());
+        existing.setCurrentInstallment(debt.getCurrentInstallment());
+        existing.setMaxFinancingTerm(debt.getMaxFinancingTerm());
+        existing.setDebtType(debt.getDebtType());
+        existing.setActive(debt.getActive());
+        return debtMapper.toModel(debtJpaRepository.save(existing));
     }
 
     @Override
