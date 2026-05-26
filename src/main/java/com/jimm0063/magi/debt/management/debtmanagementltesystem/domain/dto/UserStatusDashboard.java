@@ -18,6 +18,8 @@ public class UserStatusDashboard {
     private Double monthlyFixedExpensesAmount;
     private Double totalMonthlyDebt;
     private Double availableIncome;
+    private List<String> chartAccountLabels;
+    private List<Double> chartAccountAmounts;
     private List<DebtAccount> userDebtAccounts;
     private List<AlmostCompletedDebtsDto> almostCompletedDebts;
     private List<FixedExpense> userFixedExpenses;

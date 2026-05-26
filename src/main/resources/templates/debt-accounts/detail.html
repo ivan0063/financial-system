@@ -99,12 +99,20 @@
                         <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i></button>
                     </div>
                 </div>
-                <div class="row g-2 mt-1">
+                <div class="row g-2 mt-1 align-items-center">
                     <div class="col-auto">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="active" value="true" id="activeCheck" checked>
                             <label class="form-check-label" for="activeCheck">Active</label>
                         </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <select name="debtType" class="form-select form-select-sm">
+                            <option th:each="dtype : ${debtTypes}"
+                                    th:value="${dtype}"
+                                    th:text="${dtype}"
+                                    th:selected="${dtype.name() == 'CARD'}"></option>
+                        </select>
                     </div>
                 </div>
             </form>
