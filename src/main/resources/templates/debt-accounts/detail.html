@@ -111,10 +111,12 @@
         </div>
     </div>
 
-    <!-- Debts Table -->
+    <!-- Debts Table grouped by type -->
     <div class="card shadow-sm" th:if="${!debts.empty}">
-        <div class="card-header bg-white">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold"><i class="bi bi-list-ul me-2"></i>Active Debts</h5>
+            <span class="fw-bold text-primary"
+                  th:text="${'Total: $' + #numbers.formatDecimal(totalMonthlyPayment, 1, 2)}"></span>
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -125,55 +127,71 @@
                     <th>Original Amount</th>
                     <th>Monthly Payment</th>
                     <th>Progress</th>
-                    <th>Type</th>
                     <th></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="debt : ${debts}">
-                    <td th:text="${debt.description}"></td>
-                    <td th:text="${debt.operationDate}"></td>
-                    <td th:text="${debt.originalAmount != null ? '$' + #numbers.formatDecimal(debt.originalAmount, 1, 2) : '-'}"></td>
-                    <td th:text="${debt.monthlyPayment != null ? '$' + #numbers.formatDecimal(debt.monthlyPayment, 1, 2) : '-'}"></td>
-                    <td style="min-width: 140px;" th:if="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}">
-                        <div class="d-flex align-items-center gap-1">
-                            <div class="progress flex-grow-1" style="height: 6px;">
-                                <div class="progress-bar"
-                                     th:style="${'width: ' + (debt.currentInstallment * 100 / debt.maxFinancingTerm) + '%'}"></div>
+                <th:block th:each="entry : ${debtsByType}">
+                    <!-- Type section header -->
+                    <tr class="table-secondary">
+                        <td colspan="6" class="fw-semibold py-2">
+                            <i class="bi bi-tag-fill me-1 text-secondary"></i>
+                            <span th:text="${entry.key}"></span>
+                            <span class="ms-2 text-muted fw-normal small"
+                                  th:text="${'$' + #numbers.formatDecimal(typeSubtotals[entry.key], 1, 2)}"></span>
+                        </td>
+                    </tr>
+                    <!-- Debt rows for this type -->
+                    <tr th:each="debt : ${entry.value}">
+                        <td th:text="${debt.description}"></td>
+                        <td th:text="${debt.operationDate}"></td>
+                        <td th:text="${debt.originalAmount != null ? '$' + #numbers.formatDecimal(debt.originalAmount, 1, 2) : '-'}"></td>
+                        <td th:text="${debt.monthlyPayment != null ? '$' + #numbers.formatDecimal(debt.monthlyPayment, 1, 2) : '-'}"></td>
+                        <td style="min-width: 140px;" th:if="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}">
+                            <div class="d-flex align-items-center gap-1">
+                                <div class="progress flex-grow-1" style="height: 6px;">
+                                    <div class="progress-bar"
+                                         th:style="${'width: ' + (debt.currentInstallment * 100 / debt.maxFinancingTerm) + '%'}"></div>
+                                </div>
+                                <small class="text-muted text-nowrap"
+                                       th:text="${debt.currentInstallment + '/' + debt.maxFinancingTerm}"></small>
                             </div>
-                            <small class="text-muted text-nowrap"
-                                   th:text="${debt.currentInstallment + '/' + debt.maxFinancingTerm}"></small>
-                        </div>
-                    </td>
-                    <td th:unless="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}">
-                        <span class="text-muted">—</span>
-                    </td>
-                    <td><span class="badge bg-info text-dark" th:text="${debt.debtType}"></span></td>
-                    <td>
-                        <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                    data-bs-toggle="modal" data-bs-target="#editDebtModal"
-                                    th:attr="
-                                        data-id=${debt.id},
-                                        data-description=${debt.description},
-                                        data-date=${debt.operationDate},
-                                        data-amount=${debt.originalAmount},
-                                        data-monthly=${debt.monthlyPayment},
-                                        data-current=${debt.currentInstallment},
-                                        data-max=${debt.maxFinancingTerm},
-                                        data-type=${debt.debtType}">
-                                <i class="bi bi-pencil"></i>
-                            </button>
-                            <form th:action="@{/ui/debts/{id}(id=${debt.id})}" method="post">
-                                <input type="hidden" name="_method" value="DELETE">
-                                <input type="hidden" name="debtAccountCode" th:value="${debtAccountCode}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                        onclick="return confirm('Delete this debt?')">
-                                    <i class="bi bi-trash"></i>
+                        </td>
+                        <td th:unless="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}">
+                            <span class="text-muted">—</span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        data-bs-toggle="modal" data-bs-target="#editDebtModal"
+                                        th:attr="
+                                            data-id=${debt.id},
+                                            data-description=${debt.description},
+                                            data-date=${debt.operationDate},
+                                            data-amount=${debt.originalAmount},
+                                            data-monthly=${debt.monthlyPayment},
+                                            data-current=${debt.currentInstallment},
+                                            data-max=${debt.maxFinancingTerm},
+                                            data-type=${debt.debtType}">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                            </form>
-                        </div>
-                    </td>
+                                <form th:action="@{/ui/debts/{id}(id=${debt.id})}" method="post">
+                                    <input type="hidden" name="_method" value="DELETE">
+                                    <input type="hidden" name="debtAccountCode" th:value="${debtAccountCode}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Delete this debt?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </th:block>
+                <!-- Grand total footer -->
+                <tr class="table-dark fw-bold">
+                    <td colspan="3">Total Monthly Payment</td>
+                    <td th:text="${'$' + #numbers.formatDecimal(totalMonthlyPayment, 1, 2)}"></td>
+                    <td colspan="2"></td>
                 </tr>
                 </tbody>
             </table>

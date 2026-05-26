@@ -16,6 +16,7 @@
 
     <!-- Summary Cards -->
     <div class="row g-3 mb-4" th:if="${dashboard != null}">
+        <!-- Row 1: income overview -->
         <div class="col-sm-6 col-lg-4">
             <div class="card border-0 shadow-sm text-bg-success">
                 <div class="card-body">
@@ -43,11 +44,40 @@
             </div>
         </div>
         <div class="col-sm-6 col-lg-4">
+            <div th:class="${'card border-0 shadow-sm ' + (dashboard.availableIncome >= 0 ? 'text-bg-success' : 'text-bg-danger')}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small fw-semibold text-uppercase opacity-75">Available Income</div>
+                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.availableIncome, 1, 2)}">$0.00</div>
+                            <div class="small opacity-75">After all commitments</div>
+                        </div>
+                        <i th:class="${'bi fs-2 opacity-50 ' + (dashboard.availableIncome >= 0 ? 'bi-wallet2' : 'bi-exclamation-circle')}"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Row 2: debt breakdown -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm text-bg-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small fw-semibold text-uppercase opacity-75">Total Monthly Debt</div>
+                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.totalMonthlyDebt, 1, 2)}">$0.00</div>
+                            <div class="small opacity-75">All types combined</div>
+                        </div>
+                        <i class="bi bi-graph-down-arrow fs-2 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm text-bg-warning">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Monthly Debt Payments</div>
+                            <div class="small fw-semibold text-uppercase opacity-75">Card &amp; People</div>
                             <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.monthlyDebtPaymentAmount, 1, 2)}">$0.00</div>
                         </div>
                         <i class="bi bi-credit-card fs-2 opacity-50"></i>
@@ -55,25 +85,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-4">
-            <div class="card border-0 shadow-sm text-bg-danger">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Debt Loan Total</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.debtLoanAmount, 1, 2)}">$0.00</div>
-                        </div>
-                        <i class="bi bi-exclamation-triangle fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-4">
+        <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm text-bg-secondary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Life Plan Debt</div>
+                            <div class="small fw-semibold text-uppercase opacity-75">Life Plan</div>
                             <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.debtForLifePlanAmount, 1, 2)}">$0.00</div>
                         </div>
                         <i class="bi bi-journal-bookmark fs-2 opacity-50"></i>
@@ -81,12 +98,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-lg-4">
+        <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm text-bg-primary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Monthly Fixed Expenses</div>
+                            <div class="small fw-semibold text-uppercase opacity-75">Fixed Expenses</div>
                             <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.monthlyFixedExpensesAmount, 1, 2)}">$0.00</div>
                         </div>
                         <i class="bi bi-receipt fs-2 opacity-50"></i>
