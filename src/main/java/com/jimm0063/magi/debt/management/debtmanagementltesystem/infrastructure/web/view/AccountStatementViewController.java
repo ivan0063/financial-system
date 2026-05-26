@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -84,6 +85,14 @@ public class AccountStatementViewController {
             List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
                     .stream()
                     .peek(d -> d.setHashSum(debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
+                    .peek(d -> {
+                        if (d.getOriginalAmount() == null
+                                && d.getMonthlyPayment() != null
+                                && d.getMaxFinancingTerm() != null) {
+                            d.setOriginalAmount(d.getMonthlyPayment()
+                                    .multiply(BigDecimal.valueOf(d.getMaxFinancingTerm())));
+                        }
+                    })
                     .toList();
             AccountStatementPreviewDto preview = filterDebtsUseCase.previewAccountStatement(debts, debtAccountCode);
             session.setAttribute("extractedDebts", debts);

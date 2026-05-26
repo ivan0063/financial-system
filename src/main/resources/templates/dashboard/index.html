@@ -57,7 +57,7 @@
                 </div>
             </div>
         </div>
-        <!-- Row 2: debt breakdown -->
+        <!-- Row 2: debt breakdown — all four types + fixed expenses -->
         <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm text-bg-danger">
                 <div class="card-body">
@@ -94,6 +94,19 @@
                             <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.debtForLifePlanAmount, 1, 2)}">$0.00</div>
                         </div>
                         <i class="bi bi-journal-bookmark fs-2 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm text-bg-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small fw-semibold text-uppercase opacity-75">Loans</div>
+                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.debtLoanAmount, 1, 2)}">$0.00</div>
+                        </div>
+                        <i class="bi bi-bank fs-2 opacity-50"></i>
                     </div>
                 </div>
             </div>
