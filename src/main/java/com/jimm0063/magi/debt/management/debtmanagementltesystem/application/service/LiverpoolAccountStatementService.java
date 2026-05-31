@@ -36,12 +36,16 @@ public class LiverpoolAccountStatementService implements AccountStatementDataExt
             Pattern.CASE_INSENSITIVE
     );
 
-    // DD-MMM  SEG  TOTAL_MONTHS MENS S[/]?INTERESES  CURR  MONTHLY  SALDO_ANT  CARGOS  SALDO_CORTE
-    // Tolerates OCR artifacts: missing commas/dots in amounts, "S/INTERESES" or "SINTERESES"
+    // DD-MMM  SEG  TOTAL_MONTHS MENS <plan-suffix>  CURR  MONTHLY  SALDO_ANT  CARGOS  SALDO_CORTE
+    // Tolerates OCR artifacts:
+    //   - "|" read instead of "1" in dates  (e.g. "|-DIC" → "1-DIC")
+    //   - "SINTERESES", "SANTERESES" etc. instead of "S/INTERESES" (slash garbled or dropped/mutated)
+    //   - missing commas/decimal points in amounts
+    // The plan suffix is matched as a single non-whitespace token (\S+) to handle all OCR variants.
     private static final Pattern MSI_ROW = Pattern.compile(
-            "^(\\d{1,2})[\\-\\.](\\w{3})\\s+" +           // date DD-MMM
+            "^([\\d|]{1,2})[\\-\\.](\\w{3})\\s+" +        // date DD-MMM (| is OCR artifact for 1)
             "\\d{3}\\s+" +                                  // segmento (ignored)
-            "(\\d{2})\\s+MENS\\s+S[/]?INTERESES\\s+" +     // total months
+            "(\\d{2})\\s+MENS\\s+\\S+\\s+" +               // total months + plan suffix token
             "(\\d+)\\s+" +                                  // current installment
             "([\\d,\\.]+)\\s+" +                           // monthly payment (OCR may garble decimals)
             "([\\d,\\.]+)\\s+" +                           // saldo anterior
@@ -87,6 +91,7 @@ public class LiverpoolAccountStatementService implements AccountStatementDataExt
             Matcher m = MSI_ROW.matcher(line);
             if (!m.matches()) continue;
 
+            String day = m.group(1).replace("|", "1"); // normalize OCR pipe artifact
             int totalMonths = Integer.parseInt(m.group(3));
             int currentInstallment = Integer.parseInt(m.group(4));
             BigDecimal monthly = parseMoney(m.group(5));
@@ -95,7 +100,7 @@ public class LiverpoolAccountStatementService implements AccountStatementDataExt
             Debt debt = new Debt();
             debt.setActive(true);
             debt.setOperationDate(cutoffDate);
-            debt.setDescription(buildDescription(m.group(1), m.group(2), totalMonths));
+            debt.setDescription(buildDescription(day, m.group(2), totalMonths));
             debt.setMaxFinancingTerm(totalMonths);
             debt.setCurrentInstallment(currentInstallment);
             debt.setMonthlyPayment(monthly);
