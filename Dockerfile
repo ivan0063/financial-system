@@ -15,6 +15,11 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
+# Install Tesseract OCR with Spanish language data (required for Liverpool PDF parsing)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy the built JAR from the builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
