@@ -20,6 +20,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-spa && \
     rm -rf /var/lib/apt/lists/*
 
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
+
 # Copy the built JAR from the builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
