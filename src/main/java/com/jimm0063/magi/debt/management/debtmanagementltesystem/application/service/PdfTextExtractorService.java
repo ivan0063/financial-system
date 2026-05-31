@@ -51,6 +51,7 @@ public class PdfTextExtractorService {
         try (PDDocument doc = Loader.loadPDF(pdfBytes)) {
             PDFRenderer renderer = new PDFRenderer(doc);
             ITesseract tess = new Tesseract();
+            tess.setDatapath(resolveTessdata());
             tess.setLanguage("spa");
             tess.setOcrEngineMode(1); // LSTM engine for better accuracy
             tess.setPageSegMode(6);   // Assume uniform block of text
@@ -62,5 +63,15 @@ public class PdfTextExtractorService {
             throw new IllegalStateException("PDF text extraction failed (PDFBox + OCR fallback)", e);
         }
         return sb.toString();
+    }
+
+    /**
+     * Resolves the tessdata directory. Checks TESSDATA_PREFIX env var first,
+     * then falls back to the standard Debian/Ubuntu path used in the Docker image.
+     */
+    private static String resolveTessdata() {
+        String fromEnv = System.getenv("TESSDATA_PREFIX");
+        if (fromEnv != null && !fromEnv.isBlank()) return fromEnv;
+        return "/usr/share/tesseract-ocr/5/tessdata";
     }
 }
