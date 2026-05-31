@@ -23,12 +23,27 @@ public class PdfTextExtractorService {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             String text = stripper.getText(doc);
-            if (text != null && text.strip().length() > 50) {
+            if (isUsableText(text)) {
                 return text;
             }
         } catch (Exception ignored) {}
 
         return ocrFallback(pdfBytes);
+    }
+
+    /**
+     * Returns true only when the extracted text contains enough real alphanumeric
+     * characters to be useful. Owner-restricted PDFs return mostly U+FFFD replacement
+     * characters (�), which pass a naive length check but are not parseable.
+     */
+    private static boolean isUsableText(String text) {
+        if (text == null || text.isBlank()) return false;
+        long alphanumeric = text.chars()
+                .filter(c -> (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+                .count();
+        long nonWhitespace = text.chars().filter(c -> c > ' ').count();
+        // Require at least 30% of non-whitespace characters to be plain alphanumeric
+        return nonWhitespace > 0 && (double) alphanumeric / nonWhitespace >= 0.30;
     }
 
     private String ocrFallback(byte[] pdfBytes) {
