@@ -10,4 +10,5 @@ import java.util.List;
 @Setter
 public class DebtListForm {
     private List<CreateDebtReq> debts = new ArrayList<>();
+    private List<DebtTypeOverrideReq> typeOverrides = new ArrayList<>();
 }
