@@ -23,4 +23,11 @@ public class UserStatusDashboard {
     private List<DebtAccount> userDebtAccounts;
     private List<AlmostCompletedDebtsDto> almostCompletedDebts;
     private List<FixedExpense> userFixedExpenses;
+
+    // Insight fields
+    private Double debtToIncomeRatio;
+    private Integer debtFreeMonths;
+    private Double totalEstimatedRemainingBalance;
+    private Double almostCompletedMonthlyRelief;
+    private List<AccountSummaryDto> accountSummaries;
 }

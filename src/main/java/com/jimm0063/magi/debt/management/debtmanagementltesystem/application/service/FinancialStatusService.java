@@ -2,6 +2,7 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.application.se
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.GetFinancialStatusUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.*;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountSummaryDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AlmostCompletedDebtsDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.UserStatusDashboard;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -115,6 +117,73 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
             }
         }
 
+        // ── Insight fields ────────────────────────────────────────────────────────
+
+        // Group active debts by account code
+        Map<String, List<Debt>> debtsByAccount = userDebts.stream()
+                .filter(d -> d.getDebtAccount() != null)
+                .collect(Collectors.groupingBy(d -> d.getDebtAccount().getCode()));
+
+        double userSavings = user.getSavings() != null ? user.getSavings() : 0.0;
+
+        // Per-account summaries (only accounts with active debts)
+        List<AccountSummaryDto> accountSummaries = userDebtAccounts.stream()
+                .map(acc -> {
+                    List<Debt> accDebts = debtsByAccount.getOrDefault(acc.getCode(), List.of());
+                    if (accDebts.isEmpty()) return null;
+
+                    double monthly = accDebts.stream()
+                            .filter(d -> d.getMonthlyPayment() != null)
+                            .mapToDouble(d -> d.getMonthlyPayment().doubleValue()).sum();
+
+                    double remaining = accDebts.stream()
+                            .filter(d -> d.getMonthlyPayment() != null
+                                    && d.getCurrentInstallment() != null
+                                    && d.getMaxFinancingTerm() != null)
+                            .mapToDouble(d -> (d.getMaxFinancingTerm() - d.getCurrentInstallment())
+                                    * d.getMonthlyPayment().doubleValue())
+                            .sum();
+
+                    int maxMonths = accDebts.stream()
+                            .filter(d -> d.getCurrentInstallment() != null && d.getMaxFinancingTerm() != null)
+                            .mapToInt(d -> d.getMaxFinancingTerm() - d.getCurrentInstallment())
+                            .max().orElse(0);
+
+                    AccountSummaryDto dto = new AccountSummaryDto();
+                    dto.setCode(acc.getCode());
+                    dto.setName(acc.getName() != null ? acc.getName() : acc.getCode());
+                    dto.setPayDay(acc.getPayDay());
+                    dto.setCreditLimit(acc.getCredit());
+                    dto.setActiveDebtCount(accDebts.size());
+                    dto.setMonthlyTotal(Math.round(monthly * 100.0) / 100.0);
+                    dto.setEstimatedRemainingBalance(Math.round(remaining * 100.0) / 100.0);
+                    dto.setMaxMonthsRemaining(maxMonths);
+                    dto.setPayoffFeasible(remaining > 0 && userSavings >= remaining);
+                    dto.setSavingsCoveragePercent(remaining > 0
+                            ? Math.min(userSavings / remaining * 100.0, 100.0) : 100.0);
+                    return dto;
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        double salary = user.getSalary() != null ? user.getSalary() : 0.0;
+        double totalCommitments = totalMonthlyDebt + fixedExpensesMonthAmount;
+        Double dti = salary > 0
+                ? Math.round((totalCommitments / salary) * 10000.0) / 100.0
+                : null;
+
+        int debtFreeMonths = userDebts.stream()
+                .filter(d -> d.getCurrentInstallment() != null && d.getMaxFinancingTerm() != null)
+                .mapToInt(d -> d.getMaxFinancingTerm() - d.getCurrentInstallment())
+                .max().orElse(0);
+
+        double totalRemainingBalance = accountSummaries.stream()
+                .mapToDouble(AccountSummaryDto::getEstimatedRemainingBalance).sum();
+
+        double almostCompletedRelief = almostCompletedDebts.stream()
+                .filter(d -> d.getMonthlyPayment() != null)
+                .mapToDouble(d -> d.getMonthlyPayment().doubleValue()).sum();
+
         UserStatusDashboard response = new UserStatusDashboard();
         response.setSalary(user.getSalary());
         response.setSavings(user.getSavings());
@@ -130,6 +199,12 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
         response.setAvailableIncome(availableIncome);
         response.setChartAccountLabels(chartLabels);
         response.setChartAccountAmounts(chartAmounts);
+
+        response.setAccountSummaries(accountSummaries);
+        response.setDebtToIncomeRatio(dti);
+        response.setDebtFreeMonths(debtFreeMonths);
+        response.setTotalEstimatedRemainingBalance(totalRemainingBalance);
+        response.setAlmostCompletedMonthlyRelief(Math.round(almostCompletedRelief * 100.0) / 100.0);
 
         return response;
     }
