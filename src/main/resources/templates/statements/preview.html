@@ -7,27 +7,33 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-        .removed-row { opacity: 0.35; }
-        .removed-row input { pointer-events: none; }
+        .removed-row { opacity: .35; }
+        .inst-badge { font-size: .8rem; font-weight: 600; letter-spacing: .02em; }
+        .mode-btn { transition: none; }
         .section-divider {
             display: flex; align-items: center; gap: 1rem;
-            margin: 2rem 0 1.25rem;
-            color: #6c757d; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+            margin: 1.5rem 0 1rem;
+            color: #6c757d; font-size: .8rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: .08em;
         }
         .section-divider::before, .section-divider::after {
             content: ''; flex: 1; height: 1px; background: #dee2e6;
         }
-        .inst-badge { font-size: .8rem; font-weight: 600; letter-spacing: .02em; }
+        .toggle-divider { text-decoration: none; color: inherit; }
+        .toggle-divider:hover { color: #0d6efd; }
     </style>
 </head>
 <body class="bg-light">
 
 <div th:replace="~{layout/navbar :: navbar}"></div>
 
+<!-- Unified form: inputs in table rows carry form="previewForm"; buttons use formaction -->
+<form id="previewForm" th:action="@{/ui/statements/{code}/add(code=${debtAccountCode})}" method="post"></form>
+
 <div class="container-fluid px-4 pb-5">
 
-    <!-- Header -->
-    <div class="d-flex align-items-center mb-3">
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
+    <div class="d-flex align-items-center mb-3 flex-wrap gap-2">
         <a th:href="@{/ui/statements/{code}(code=${debtAccountCode})}" class="btn btn-outline-secondary me-3">
             <i class="bi bi-arrow-left"></i>
         </a>
@@ -37,267 +43,240 @@
             </h2>
             <span class="text-muted font-monospace small" th:text="${debtAccountCode}"></span>
         </div>
-        <div class="ms-auto d-flex gap-2">
+        <div class="ms-auto d-flex gap-2 flex-wrap">
             <span class="badge bg-secondary fs-6 px-3 py-2">
                 <i class="bi bi-database me-1"></i>
                 <span th:text="${#lists.size(currentDebts)}">0</span> current
             </span>
-            <span class="badge bg-success fs-6 px-3 py-2">
+            <span class="badge bg-success fs-6 px-3 py-2" th:if="${not #lists.isEmpty(newDebts)}">
                 <i class="bi bi-plus-circle me-1"></i>
-                <span th:text="${#lists.size(newDebts)}">0</span> to add
+                <span th:text="${#lists.size(newDebts)}">0</span> new
             </span>
-            <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2" th:if="${not #lists.isEmpty(installmentUpdates)}">
                 <i class="bi bi-arrow-up-circle me-1"></i>
-                <span th:text="${#lists.size(installmentUpdates)}">0</span> to update
+                <span th:text="${#lists.size(installmentUpdates)}">0</span> updated
             </span>
             <span class="badge bg-danger fs-6 px-3 py-2" th:if="${not #lists.isEmpty(completedDebts)}">
                 <i class="bi bi-x-circle me-1"></i>
-                <span th:text="${#lists.size(completedDebts)}">0</span> to close
+                <span th:text="${#lists.size(completedDebts)}">0</span> completed
             </span>
         </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════════
-         SECTION 1: CURRENT DEBTS IN ACCOUNT (read-only reference)
-         ═══════════════════════════════════════════════════════════ -->
-    <div class="section-divider">Current debts in account</div>
-
-    <div class="card shadow-sm mb-2" th:if="${not #lists.isEmpty(currentDebts)}">
-        <div class="table-responsive">
-            <table class="table table-sm table-hover mb-0 align-middle">
-                <thead class="table-secondary">
-                <tr>
-                    <th>Description</th>
-                    <th class="text-end" style="min-width:100px">Amount</th>
-                    <th class="text-end" style="min-width:100px">Monthly</th>
-                    <th style="min-width:200px">Installment</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="debt : ${currentDebts}">
-                    <td th:text="${debt.description}"></td>
-                    <td class="text-end font-monospace small" th:text="${debt.originalAmount}"></td>
-                    <td class="text-end font-monospace small" th:text="${debt.monthlyPayment}"></td>
-                    <td>
-                        <div th:if="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
-                             class="d-flex align-items-center gap-2">
-                            <div class="progress flex-grow-1" style="height:6px;">
-                                <div class="progress-bar bg-secondary"
-                                     th:style="|width: ${debt.currentInstallment * 100 / debt.maxFinancingTerm}%|"></div>
-                            </div>
-                            <span class="inst-badge text-muted text-nowrap"
-                                  th:text="${debt.currentInstallment + '/' + debt.maxFinancingTerm}"></span>
-                        </div>
-                        <span th:unless="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
-                              class="text-muted small">&#8212;</span>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
+    <!-- ── Mode Toggle ─────────────────────────────────────────────────────── -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-body py-3">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <span class="fw-semibold text-muted small text-uppercase" style="letter-spacing:.05em;">Mode</span>
+                <div class="btn-group" role="group" aria-label="Preview mode">
+                    <button type="button" class="btn btn-outline-success mode-btn"
+                            data-mode="new" onclick="setMode('new')">
+                        <i class="bi bi-plus-circle me-1"></i>Load New Debts
+                    </button>
+                    <button type="button" class="btn btn-outline-warning mode-btn"
+                            data-mode="sync" onclick="setMode('sync')">
+                        <i class="bi bi-arrow-repeat me-1"></i>Sync Debts
+                    </button>
+                    <button type="button" class="btn btn-outline-danger mode-btn"
+                            data-mode="sot" onclick="setMode('sot')">
+                        <i class="bi bi-exclamation-triangle me-1"></i>Replace as Source of Truth
+                    </button>
+                </div>
+                <span id="modeDescription" class="text-muted fst-italic small"></span>
+            </div>
         </div>
     </div>
-    <div class="alert alert-light border mb-2 py-2 small text-muted"
-         th:if="${#lists.isEmpty(currentDebts)}">
-        <i class="bi bi-inbox me-1"></i>No active debts in this account yet.
+
+    <!-- ── Current Debts (collapsible reference) ───────────────────────────── -->
+    <div class="section-divider">
+        <a class="toggle-divider d-flex align-items-center gap-1"
+           data-bs-toggle="collapse" href="#currentDebtsCollapse" role="button" aria-expanded="false">
+            <i class="bi bi-chevron-right small" id="currentDebtsChevron"></i>Current debts in account
+        </a>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════════
-         SECTION 2: DEBTS TO BE LOADED (editable)
-         ═══════════════════════════════════════════════════════════ -->
-    <div class="section-divider">Debts to be loaded</div>
-
-    <div class="card shadow-sm border-success mb-2" th:if="${not #lists.isEmpty(newDebts)}">
-        <div class="card-header bg-success bg-opacity-10 d-flex justify-content-between align-items-center py-2">
-            <span class="fw-semibold text-success small">
-                <i class="bi bi-plus-circle me-1"></i>
-                <span th:text="${#lists.size(newDebts)}">0</span> new debts extracted
-            </span>
-            <small class="text-muted">Edit any field. Click <i class="bi bi-x-circle"></i> to exclude a row from saving.</small>
-        </div>
-        <form th:action="@{/ui/statements/{code}/add(code=${debtAccountCode})}" method="post" id="addForm">
+    <div class="collapse" id="currentDebtsCollapse">
+        <div class="card shadow-sm mb-2" th:if="${not #lists.isEmpty(currentDebts)}">
             <div class="table-responsive">
-                <table class="table table-sm mb-0 align-middle">
-                    <thead class="table-success bg-opacity-25">
+                <table class="table table-sm table-hover mb-0 align-middle">
+                    <thead class="table-secondary">
                     <tr>
-                        <th style="min-width:210px">Description</th>
-                        <th style="min-width:115px">Date</th>
-                        <th style="min-width:110px">Amount</th>
-                        <th style="min-width:110px">Monthly</th>
-                        <th style="min-width:75px">Inst.</th>
-                        <th style="min-width:75px">Max</th>
-                        <th style="min-width:120px">Type</th>
-                        <th style="width:46px"></th>
+                        <th>Description</th>
+                        <th class="text-end" style="min-width:100px">Amount</th>
+                        <th class="text-end" style="min-width:100px">Monthly</th>
+                        <th style="min-width:110px">Type</th>
+                        <th style="min-width:200px">Installment</th>
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="debt, iterStat : ${newDebts}" th:id="'row-' + ${iterStat.index}">
+                    <tr th:each="debt : ${currentDebts}">
+                        <td th:text="${debt.description}"></td>
+                        <td class="text-end font-monospace small" th:text="${debt.originalAmount}"></td>
+                        <td class="text-end font-monospace small" th:text="${debt.monthlyPayment}"></td>
                         <td>
-                            <input type="text"
-                                   th:name="|debts[${iterStat.index}].description|"
-                                   th:value="${debt.description}"
-                                   class="form-control form-control-sm">
+                            <span class="badge rounded-pill text-bg-secondary small"
+                                  th:text="${debt.debtType ?: 'CARD'}"></span>
                         </td>
                         <td>
-                            <input type="text"
-                                   th:name="|debts[${iterStat.index}].operationDate|"
-                                   th:value="${debt.operationDate}"
-                                   class="form-control form-control-sm"
-                                   placeholder="yyyy-MM-dd">
-                        </td>
-                        <td>
-                            <input type="number" step="0.01"
-                                   th:name="|debts[${iterStat.index}].originalAmount|"
-                                   th:value="${debt.originalAmount}"
-                                   class="form-control form-control-sm">
-                        </td>
-                        <td>
-                            <input type="number" step="0.01" required
-                                   th:name="|debts[${iterStat.index}].monthlyPayment|"
-                                   th:value="${debt.monthlyPayment}"
-                                   class="form-control form-control-sm">
-                        </td>
-                        <td>
-                            <input type="number"
-                                   th:name="|debts[${iterStat.index}].currentInstallment|"
-                                   th:value="${debt.currentInstallment}"
-                                   class="form-control form-control-sm">
-                        </td>
-                        <td>
-                            <input type="number" required
-                                   th:name="|debts[${iterStat.index}].maxFinancingTerm|"
-                                   th:value="${debt.maxFinancingTerm}"
-                                   class="form-control form-control-sm">
-                        </td>
-                        <td>
-                            <select required th:name="|debts[${iterStat.index}].debtType|"
-                                    class="form-select form-select-sm">
-                                <option th:each="dtype : ${debtTypes}"
-                                        th:value="${dtype}"
-                                        th:text="${dtype}"
-                                        th:selected="${dtype == debt.debtType}"></option>
-                            </select>
-                        </td>
-                        <td class="text-center">
-                            <button type="button" class="btn btn-sm btn-outline-danger border-0"
-                                    title="Exclude from save"
-                                    th:attr="data-row=${iterStat.index}"
-                                    onclick="removeDebtRow(this)">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
+                            <div th:if="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
+                                 class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:6px;">
+                                    <div class="progress-bar bg-secondary"
+                                         th:style="|width: ${debt.currentInstallment * 100 / debt.maxFinancingTerm}%|"></div>
+                                </div>
+                                <span class="inst-badge text-muted text-nowrap"
+                                      th:text="${debt.currentInstallment + '/' + debt.maxFinancingTerm}"></span>
+                            </div>
+                            <span th:unless="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
+                                  class="text-muted small">&#8212;</span>
                         </td>
                     </tr>
                     </tbody>
                 </table>
             </div>
-            <div class="card-footer bg-white d-flex justify-content-between align-items-center">
-                <a th:href="@{/ui/debt-accounts/{code}(code=${debtAccountCode})}"
-                   class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-x-lg me-1"></i>Cancel
-                </a>
-                <button type="submit" class="btn btn-success">
-                    <i class="bi bi-floppy me-2"></i>Save Selected Debts
-                </button>
-            </div>
-        </form>
-    </div>
-    <div class="alert alert-light border mb-2 py-2 small text-muted"
-         th:if="${#lists.isEmpty(newDebts)}">
-        <i class="bi bi-check-circle me-1 text-success"></i>No new debts found — all statement entries are already in the database.
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════════════
-         SECTION 3: DEBTS TO BE UPDATED (installment diff, read-only)
-         ═══════════════════════════════════════════════════════════ -->
-    <div class="section-divider">Debts to be updated</div>
-
-    <div class="card shadow-sm border-warning mb-2" th:if="${not #lists.isEmpty(installmentUpdates)}">
-        <div class="card-header bg-warning bg-opacity-10 py-2">
-            <span class="fw-semibold text-warning small">
-                <i class="bi bi-arrow-up-circle me-1"></i>
-                <span th:text="${#lists.size(installmentUpdates)}">0</span> installment changes detected
-            </span>
-            <small class="text-muted ms-2">Applied automatically on Full Sync.</small>
         </div>
+        <div class="alert alert-light border mb-2 py-2 small text-muted"
+             th:if="${#lists.isEmpty(currentDebts)}">
+            <i class="bi bi-inbox me-1"></i>No active debts in this account yet.
+        </div>
+    </div>
+
+    <!-- ── Movements Table ─────────────────────────────────────────────────── -->
+    <div class="section-divider">Statement movements</div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white d-flex align-items-center py-2 gap-2 flex-wrap">
+            <span class="fw-semibold small"><i class="bi bi-activity me-1"></i>Detected changes</span>
+            <span id="tableHint" class="text-muted small ms-auto fst-italic"></span>
+        </div>
+
         <div class="table-responsive">
             <table class="table table-sm mb-0 align-middle">
-                <thead class="table-warning bg-opacity-50">
+                <thead class="table-light">
                 <tr>
-                    <th>Description</th>
-                    <th style="min-width:160px">Installment change</th>
-                    <th style="min-width:190px">Progress</th>
+                    <th style="width:90px">Movement</th>
+                    <th style="min-width:210px">Description</th>
+                    <th style="min-width:115px">Date</th>
+                    <th style="min-width:110px">Amount</th>
+                    <th style="min-width:110px">Monthly</th>
+                    <th style="min-width:100px">Inst.</th>
+                    <th style="min-width:65px">Max</th>
+                    <th style="min-width:130px">Type</th>
+                    <th style="width:46px"></th>
                 </tr>
                 </thead>
-                <tbody>
-                <tr th:each="update : ${installmentUpdates}">
-                    <td th:text="${update.debt.description}"></td>
+
+                <!-- ── tbody-new: green rows, editable — "new" + "sync" modes ── -->
+                <tbody id="tbody-new" style="display:none"
+                       th:if="${not #lists.isEmpty(newDebts)}">
+                <tr class="table-success" th:each="debt, iterStat : ${newDebts}"
+                    th:id="'row-' + ${iterStat.index}">
+                    <td><span class="badge text-bg-success">NEW</span></td>
+                    <td>
+                        <input type="text" form="previewForm"
+                               th:name="|debts[${iterStat.index}].description|"
+                               th:value="${debt.description}"
+                               class="form-control form-control-sm">
+                    </td>
+                    <td>
+                        <input type="text" form="previewForm"
+                               th:name="|debts[${iterStat.index}].operationDate|"
+                               th:value="${debt.operationDate}"
+                               class="form-control form-control-sm" placeholder="yyyy-MM-dd">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" form="previewForm"
+                               th:name="|debts[${iterStat.index}].originalAmount|"
+                               th:value="${debt.originalAmount}"
+                               class="form-control form-control-sm">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" form="previewForm"
+                               th:name="|debts[${iterStat.index}].monthlyPayment|"
+                               th:value="${debt.monthlyPayment}"
+                               class="form-control form-control-sm">
+                    </td>
+                    <td>
+                        <input type="number" form="previewForm"
+                               th:name="|debts[${iterStat.index}].currentInstallment|"
+                               th:value="${debt.currentInstallment}"
+                               class="form-control form-control-sm">
+                    </td>
+                    <td>
+                        <input type="number" form="previewForm"
+                               th:name="|debts[${iterStat.index}].maxFinancingTerm|"
+                               th:value="${debt.maxFinancingTerm}"
+                               class="form-control form-control-sm">
+                    </td>
+                    <td>
+                        <select form="previewForm"
+                                th:name="|debts[${iterStat.index}].debtType|"
+                                class="form-select form-select-sm">
+                            <option th:each="dtype : ${debtTypes}"
+                                    th:value="${dtype}" th:text="${dtype}"
+                                    th:selected="${dtype == debt.debtType}"></option>
+                        </select>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-outline-danger border-0"
+                                title="Exclude from save"
+                                th:attr="data-row=${iterStat.index}"
+                                onclick="removeDebtRow(this)">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </td>
+                </tr>
+                </tbody>
+
+                <!-- ── tbody-sync: yellow rows, type override — "sync" mode only ── -->
+                <tbody id="tbody-sync" style="display:none"
+                       th:if="${not #lists.isEmpty(installmentUpdates)}">
+                <tr class="table-warning" th:each="update, iterStat : ${installmentUpdates}">
+                    <td><span class="badge text-bg-warning text-dark">UPDATED</span></td>
+                    <td class="small fw-semibold" th:text="${update.debt.description}"></td>
+                    <td class="small text-muted" th:text="${update.debt.operationDate ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${update.debt.originalAmount ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${update.debt.monthlyPayment ?: '—'}"></td>
                     <td class="text-nowrap">
-                        <!-- struck-through old value -->
-                        <span class="badge rounded-pill text-bg-danger text-decoration-line-through me-1 inst-badge"
+                        <span class="badge rounded-pill text-bg-danger text-decoration-line-through inst-badge"
                               th:text="${update.previousInstallment}"></span>
-                        <i class="bi bi-arrow-right text-muted"></i>
-                        <!-- new value with /max context -->
-                        <span class="badge rounded-pill text-bg-success ms-1 inst-badge"
+                        <i class="bi bi-arrow-right text-muted mx-1 small"></i>
+                        <span class="badge rounded-pill text-bg-success inst-badge"
                               th:text="${update.newInstallment}"></span>
                         <span class="text-muted small ms-1"
                               th:if="${update.debt.maxFinancingTerm != null and update.debt.maxFinancingTerm > 0}"
                               th:text="|/ ${update.debt.maxFinancingTerm}|"></span>
                     </td>
-                    <td th:if="${update.debt.maxFinancingTerm != null and update.debt.maxFinancingTerm > 0}">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="progress flex-grow-1" style="height:6px;">
-                                <div class="progress-bar bg-warning"
-                                     th:style="|width: ${update.newInstallment * 100 / update.debt.maxFinancingTerm}%|"></div>
-                            </div>
-                            <span class="inst-badge text-muted text-nowrap"
-                                  th:text="${update.newInstallment + '/' + update.debt.maxFinancingTerm}"></span>
-                        </div>
+                    <td class="small text-muted"
+                        th:text="${update.debt.maxFinancingTerm != null ? update.debt.maxFinancingTerm : '—'}"></td>
+                    <td>
+                        <input type="hidden" form="previewForm"
+                               th:name="|typeOverrides[${iterStat.index}].hashSum|"
+                               th:value="${update.debt.hashSum}">
+                        <select form="previewForm"
+                                th:name="|typeOverrides[${iterStat.index}].debtType|"
+                                class="form-select form-select-sm">
+                            <option th:each="dtype : ${debtTypes}"
+                                    th:value="${dtype}" th:text="${dtype}"
+                                    th:selected="${dtype == update.debt.debtType}"></option>
+                        </select>
                     </td>
-                    <td th:unless="${update.debt.maxFinancingTerm != null and update.debt.maxFinancingTerm > 0}"
-                        class="text-muted small">&#8212;</td>
+                    <td></td>
                 </tr>
                 </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="alert alert-light border mb-2 py-2 small text-muted"
-         th:if="${#lists.isEmpty(installmentUpdates)}">
-        <i class="bi bi-check-circle me-1 text-success"></i>No installment changes detected.
-    </div>
 
-    <!-- ══════════════════════════════════════════════════════════════
-         SECTION 4: DEBTS TO BE CLOSED (max installment reached)
-         ═══════════════════════════════════════════════════════════ -->
-    <div class="section-divider" th:if="${not #lists.isEmpty(completedDebts)}">Debts to be closed</div>
-
-    <div class="card shadow-sm border-danger mb-2" th:if="${not #lists.isEmpty(completedDebts)}">
-        <div class="card-header bg-danger bg-opacity-10 py-2">
-            <span class="fw-semibold text-danger small">
-                <i class="bi bi-x-circle me-1"></i>
-                <span th:text="${#lists.size(completedDebts)}">0</span> debts reached their final installment
-            </span>
-            <small class="text-muted ms-2">These will be marked as <strong>closed</strong> when you save.</small>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-sm mb-0 align-middle">
-                <thead class="table-danger bg-opacity-50">
-                <tr>
-                    <th>Description</th>
-                    <th class="text-end" style="min-width:100px">Amount</th>
-                    <th class="text-end" style="min-width:100px">Monthly</th>
-                    <th style="min-width:200px">Final Installment</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="debt : ${completedDebts}">
-                    <td>
-                        <span th:text="${debt.description}"></span>
-                        <span class="badge text-bg-danger ms-1 small">completed</span>
-                    </td>
-                    <td class="text-end font-monospace small" th:text="${debt.originalAmount}"></td>
-                    <td class="text-end font-monospace small" th:text="${debt.monthlyPayment}"></td>
+                <!-- ── tbody-sync-done: red display-only rows — "sync" mode only ── -->
+                <tbody id="tbody-sync-done" style="display:none"
+                       th:if="${not #lists.isEmpty(completedDebts)}">
+                <tr class="table-danger" th:each="debt : ${completedDebts}">
+                    <td><span class="badge text-bg-danger">DONE</span></td>
+                    <td class="small fw-semibold" th:text="${debt.description}"></td>
+                    <td class="small text-muted" th:text="${debt.operationDate ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${debt.originalAmount ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${debt.monthlyPayment ?: '—'}"></td>
                     <td>
                         <div th:if="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
-                             class="d-flex align-items-center gap-2">
+                             class="d-flex align-items-center gap-1">
                             <div class="progress flex-grow-1" style="height:6px;">
                                 <div class="progress-bar bg-danger" style="width:100%"></div>
                             </div>
@@ -305,81 +284,151 @@
                                   th:text="${debt.maxFinancingTerm + '/' + debt.maxFinancingTerm}"></span>
                         </div>
                     </td>
+                    <td class="small text-muted"
+                        th:text="${debt.maxFinancingTerm != null ? debt.maxFinancingTerm : '—'}"></td>
+                    <td>
+                        <select class="form-select form-select-sm" disabled>
+                            <option th:each="dtype : ${debtTypes}"
+                                    th:value="${dtype}" th:text="${dtype}"
+                                    th:selected="${dtype == debt.debtType}"></option>
+                        </select>
+                    </td>
+                    <td></td>
                 </tr>
                 </tbody>
+
+                <!-- ── tbody-sot: all red, typeOverride for every row — "sot" mode only ── -->
+                <tbody id="tbody-sot" style="display:none"
+                       th:if="${not (#lists.isEmpty(newDebts) and #lists.isEmpty(installmentUpdates) and #lists.isEmpty(completedDebts))}">
+
+                <!-- newDebts as red rows -->
+                <tr class="table-danger" th:each="debt, s : ${newDebts}"
+                    th:with="sotIdx=${s.index}">
+                    <td><span class="badge text-bg-danger">NEW</span></td>
+                    <td class="small fw-semibold" th:text="${debt.description}"></td>
+                    <td class="small text-muted" th:text="${debt.operationDate ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${debt.originalAmount ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${debt.monthlyPayment ?: '—'}"></td>
+                    <td class="small text-muted text-nowrap"
+                        th:text="${(debt.currentInstallment ?: '—') + ' / ' + (debt.maxFinancingTerm ?: '—')}"></td>
+                    <td class="small text-muted" th:text="${debt.maxFinancingTerm ?: '—'}"></td>
+                    <td>
+                        <input type="hidden" form="previewForm"
+                               th:name="|typeOverrides[${sotIdx}].hashSum|"
+                               th:value="${debt.hashSum}">
+                        <select form="previewForm"
+                                th:name="|typeOverrides[${sotIdx}].debtType|"
+                                class="form-select form-select-sm">
+                            <option th:each="dtype : ${debtTypes}"
+                                    th:value="${dtype}" th:text="${dtype}"
+                                    th:selected="${dtype == debt.debtType}"></option>
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+
+                <!-- installmentUpdates as red rows -->
+                <tr class="table-danger" th:each="update, s : ${installmentUpdates}"
+                    th:with="sotIdx=${#lists.size(newDebts) + s.index}">
+                    <td><span class="badge text-bg-danger">UPDATED</span></td>
+                    <td class="small fw-semibold" th:text="${update.debt.description}"></td>
+                    <td class="small text-muted" th:text="${update.debt.operationDate ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${update.debt.originalAmount ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${update.debt.monthlyPayment ?: '—'}"></td>
+                    <td class="small text-muted text-nowrap"
+                        th:text="${(update.newInstallment ?: '—') + ' / ' + (update.debt.maxFinancingTerm ?: '—')}"></td>
+                    <td class="small text-muted"
+                        th:text="${update.debt.maxFinancingTerm ?: '—'}"></td>
+                    <td>
+                        <input type="hidden" form="previewForm"
+                               th:name="|typeOverrides[${sotIdx}].hashSum|"
+                               th:value="${update.debt.hashSum}">
+                        <select form="previewForm"
+                                th:name="|typeOverrides[${sotIdx}].debtType|"
+                                class="form-select form-select-sm">
+                            <option th:each="dtype : ${debtTypes}"
+                                    th:value="${dtype}" th:text="${dtype}"
+                                    th:selected="${dtype == update.debt.debtType}"></option>
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+
+                <!-- completedDebts as red rows -->
+                <tr class="table-danger" th:each="debt, s : ${completedDebts}"
+                    th:with="sotIdx=${#lists.size(newDebts) + #lists.size(installmentUpdates) + s.index}">
+                    <td><span class="badge text-bg-danger">DONE</span></td>
+                    <td class="small fw-semibold" th:text="${debt.description}"></td>
+                    <td class="small text-muted" th:text="${debt.operationDate ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${debt.originalAmount ?: '—'}"></td>
+                    <td class="small font-monospace text-end" th:text="${debt.monthlyPayment ?: '—'}"></td>
+                    <td class="small text-muted text-nowrap"
+                        th:text="${(debt.maxFinancingTerm ?: '—') + ' / ' + (debt.maxFinancingTerm ?: '—')}"></td>
+                    <td class="small text-muted" th:text="${debt.maxFinancingTerm ?: '—'}"></td>
+                    <td>
+                        <input type="hidden" form="previewForm"
+                               th:name="|typeOverrides[${sotIdx}].hashSum|"
+                               th:value="${debt.hashSum}">
+                        <select form="previewForm"
+                                th:name="|typeOverrides[${sotIdx}].debtType|"
+                                class="form-select form-select-sm">
+                            <option th:each="dtype : ${debtTypes}"
+                                    th:value="${dtype}" th:text="${dtype}"
+                                    th:selected="${dtype == debt.debtType}"></option>
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+
+                </tbody>
+
+                <!-- ── Empty state ── -->
+                <tbody th:if="${#lists.isEmpty(newDebts) and #lists.isEmpty(installmentUpdates) and #lists.isEmpty(completedDebts)}">
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        <i class="bi bi-check-circle text-success me-1"></i>
+                        No movements detected — statement matches the current account state.
+                    </td>
+                </tr>
+                </tbody>
+
             </table>
         </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════════
-         PERSIST OPTIONS
-         ═══════════════════════════════════════════════════════════ -->
-    <div class="section-divider">Choose how to persist</div>
+    <!-- ── Action Bar ──────────────────────────────────────────────────────── -->
+    <div class="d-flex justify-content-between align-items-center pb-5">
+        <a th:href="@{/ui/debt-accounts/{code}(code=${debtAccountCode})}"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg me-1"></i>Cancel
+        </a>
 
-    <div class="row g-3 mb-5">
-
-        <!-- Option A: Save new debts only (uses the editable form already on page) -->
-        <div class="col-md-4">
-            <div class="card border-success h-100">
-                <div class="card-header bg-success bg-opacity-10">
-                    <h6 class="mb-0 fw-semibold text-success">
-                        <i class="bi bi-plus-circle me-1"></i>Save New Debts
-                    </h6>
-                </div>
-                <div class="card-body small text-muted">
-                    Adds only the new debts extracted from the statement. Existing debts in the account are left untouched.
-                    You can edit or exclude individual rows in the "Debts to be loaded" table above before submitting.
-                </div>
-                <div class="card-footer bg-white">
-                    <button type="submit" form="addForm" class="btn btn-success w-100">
-                        <i class="bi bi-floppy me-1"></i>Save New Debts
-                    </button>
-                </div>
-            </div>
+        <!-- Action for "new" mode -->
+        <div data-action-mode="new" style="display:none">
+            <button type="submit" form="previewForm"
+                    th:formaction="@{/ui/statements/{code}/add(code=${debtAccountCode})}"
+                    class="btn btn-success">
+                <i class="bi bi-floppy me-1"></i>Save New Debts
+            </button>
         </div>
 
-        <!-- Option B: Full Sync -->
-        <div class="col-md-4">
-            <div class="card border-warning h-100">
-                <div class="card-header bg-warning bg-opacity-10">
-                    <h6 class="mb-0 fw-semibold text-warning">
-                        <i class="bi bi-arrow-repeat me-1"></i>Full Sync
-                    </h6>
-                </div>
-                <div class="card-body small text-muted">
-                    Saves new debts and updates installments. Debts currently active in the account that no longer appear in the statement are deactivated.
-                </div>
-                <div class="card-footer bg-white">
-                    <form th:action="@{/ui/statements/{code}/sync(code=${debtAccountCode})}" method="post">
-                        <button type="submit" class="btn btn-warning w-100"
-                                onclick="return confirm('Full Sync will deactivate debts not in this statement. Continue?')">
-                            <i class="bi bi-arrow-repeat me-1"></i>Full Sync
-                        </button>
-                    </form>
-                </div>
-            </div>
+        <!-- Action for "sync" mode -->
+        <div data-action-mode="sync" style="display:none">
+            <button type="submit" form="previewForm"
+                    th:formaction="@{/ui/statements/{code}/sync(code=${debtAccountCode})}"
+                    class="btn btn-warning"
+                    onclick="return confirm('Full Sync will update installments and deactivate debts not in this statement. Continue?')">
+                <i class="bi bi-arrow-repeat me-1"></i>Full Sync
+            </button>
         </div>
 
-        <!-- Option C: Source of Truth Replace -->
-        <div class="col-md-4">
-            <div class="card border-danger h-100">
-                <div class="card-header bg-danger bg-opacity-10">
-                    <h6 class="mb-0 fw-semibold text-danger">
-                        <i class="bi bi-exclamation-triangle me-1"></i>Source of Truth
-                    </h6>
-                </div>
-                <div class="card-body small text-muted">
-                    Deactivates <strong>all</strong> existing debts for this account and replaces them entirely with the statement. This cannot be undone.
-                </div>
-                <div class="card-footer bg-white">
-                    <button type="button" class="btn btn-danger w-100"
-                            data-bs-toggle="modal" data-bs-target="#confirmReplaceModal">
-                        <i class="bi bi-trash3 me-1"></i>Replace as Source of Truth
-                    </button>
-                </div>
-            </div>
+        <!-- Action for "sot" mode -->
+        <div data-action-mode="sot" style="display:none">
+            <button type="button" class="btn btn-danger"
+                    data-bs-toggle="modal" data-bs-target="#confirmReplaceModal">
+                <i class="bi bi-trash3 me-1"></i>Replace as Source of Truth
+            </button>
         </div>
-
     </div>
 
 </div><!-- /container -->
@@ -400,11 +449,11 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form th:action="@{/ui/statements/{code}/replace(code=${debtAccountCode})}" method="post" style="display:inline">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash3 me-1"></i>Yes, Replace Everything
-                    </button>
-                </form>
+                <button type="submit" form="previewForm"
+                        th:formaction="@{/ui/statements/{code}/replace(code=${debtAccountCode})}"
+                        class="btn btn-danger">
+                    <i class="bi bi-trash3 me-1"></i>Yes, Replace Everything
+                </button>
             </div>
         </div>
     </div>
@@ -412,16 +461,99 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+var ALL_TBODIES = ['tbody-new', 'tbody-sync', 'tbody-sync-done', 'tbody-sot'];
+
+var MODE_SHOW = {
+    'new':  ['tbody-new'],
+    'sync': ['tbody-new', 'tbody-sync', 'tbody-sync-done'],
+    'sot':  ['tbody-sot']
+};
+
+var MODE_DESC = {
+    'new':  'Shows only new debts — existing debts are left untouched.',
+    'sync': 'Shows new debts (green) and installment changes (yellow). Debts not in the statement will be deactivated.',
+    'sot':  'All statement debts shown in red — this will replace every existing debt for this account. Cannot be undone.'
+};
+
+var MODE_HINT = {
+    'new':  'Edit rows freely. Click × to exclude a row.',
+    'sync': 'Change type on UPDATED rows to override the saved type.',
+    'sot':  'Change type on any row before replacing.'
+};
+
+function setMode(mode) {
+    // Disable + hide all tbodies
+    ALL_TBODIES.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.querySelectorAll('input, select').forEach(function(i) { i.disabled = true; });
+        el.style.display = 'none';
+    });
+
+    // Enable + show tbodies for this mode
+    (MODE_SHOW[mode] || []).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.querySelectorAll('input, select').forEach(function(i) { i.disabled = false; });
+        el.style.display = '';
+    });
+
+    // Keep manually removed rows disabled
+    document.querySelectorAll('.removed-row input, .removed-row select')
+            .forEach(function(i) { i.disabled = true; });
+
+    // Swap action buttons
+    document.querySelectorAll('[data-action-mode]').forEach(function(el) {
+        el.style.display = 'none';
+    });
+    var actionEl = document.querySelector('[data-action-mode="' + mode + '"]');
+    if (actionEl) actionEl.style.display = '';
+
+    // Update description + hint
+    var descEl = document.getElementById('modeDescription');
+    if (descEl) descEl.textContent = MODE_DESC[mode] || '';
+    var hintEl = document.getElementById('tableHint');
+    if (hintEl) hintEl.textContent = MODE_HINT[mode] || '';
+
+    // Update toggle button active state
+    document.querySelectorAll('.mode-btn').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    var activeBtn = document.querySelector('[data-mode="' + mode + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
 function removeDebtRow(btn) {
     var index = btn.getAttribute('data-row');
     var row = document.getElementById('row-' + index);
     if (!row) return;
-    var descInput = row.querySelector('input[type=text]');
-    if (descInput) descInput.value = '';
     row.classList.add('removed-row');
-    row.querySelectorAll('input').forEach(function(i) { i.readOnly = true; });
+    row.querySelectorAll('input, select').forEach(function(el) { el.disabled = true; });
     btn.disabled = true;
 }
+
+// Collapse chevron icon toggle
+document.addEventListener('DOMContentLoaded', function() {
+    var collapseEl = document.getElementById('currentDebtsCollapse');
+    var icon = document.getElementById('currentDebtsChevron');
+    if (collapseEl && icon) {
+        collapseEl.addEventListener('show.bs.collapse', function() {
+            icon.className = 'bi bi-chevron-down small';
+        });
+        collapseEl.addEventListener('hide.bs.collapse', function() {
+            icon.className = 'bi bi-chevron-right small';
+        });
+    }
+});
+</script>
+
+<!-- Determine initial mode from server-side data and activate it -->
+<script th:inline="javascript">
+(function() {
+    var hasUpdates   = /*[[${not #lists.isEmpty(installmentUpdates)}]]*/ false;
+    var hasCompleted = /*[[${not #lists.isEmpty(completedDebts)}]]*/ false;
+    setMode((hasUpdates || hasCompleted) ? 'sync' : 'new');
+})();
 </script>
 </body>
 </html>

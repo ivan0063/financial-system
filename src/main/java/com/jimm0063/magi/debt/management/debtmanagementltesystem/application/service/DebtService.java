@@ -138,6 +138,7 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
             Debt dbMatch = dbByHash.get(debt.getHashSum());
             if (dbMatch != null) {
                 dbMatch.setCurrentInstallment(debt.getCurrentInstallment());
+                dbMatch.setDebtType(debt.getDebtType());
                 toUpdate.add(dbMatch);
             } else {
                 debt.setDebtAccount(debtAccount);

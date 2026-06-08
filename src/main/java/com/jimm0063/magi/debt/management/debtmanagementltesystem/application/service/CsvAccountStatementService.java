@@ -4,98 +4,87 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.DebtAccount;
+import com.opencsv.CSVReader;
+import com.opencsv.exceptions.CsvValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Parses a user-supplied CSV file into debts for bulk import.
- *
- * Expected CSV header (first row is always skipped):
- *   description,operation_date,original_amount,monthly_payment,current_installment,max_financing_term,debt_type
- *
- * Columns:
- *   description         - Free-text label for the debt (wrap in quotes if it contains commas)
- *   operation_date      - ISO date: YYYY-MM-DD
- *   original_amount     - Total debt amount (decimal, e.g. 35000.00)
- *   monthly_payment     - Monthly instalment amount (decimal)
- *   current_installment - Installment already paid (integer, use 0 for a new debt)
- *   max_financing_term  - Total number of instalments (integer)
- *   debt_type           - One of: CARD, LOAN, PEOPLE, FOR_LIFE_PLAN
- */
-@Service("CSV")
+@Service("CSV_UPLOAD")
 public class CsvAccountStatementService implements AccountStatementDataExtractionUseCase {
-
-    private static final int COL_DESCRIPTION = 0;
-    private static final int COL_OPERATION_DATE = 1;
-    private static final int COL_ORIGINAL_AMOUNT = 2;
-    private static final int COL_MONTHLY_PAYMENT = 3;
-    private static final int COL_CURRENT_INSTALLMENT = 4;
-    private static final int COL_MAX_FINANCING_TERM = 5;
-    private static final int COL_DEBT_TYPE = 6;
-    private static final int REQUIRED_COLUMNS = 7;
 
     @Override
     public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount) {
         List<Debt> debts = new ArrayList<>();
-        try {
-            String content = new String(accountStatement.getBytes(), StandardCharsets.UTF_8);
-            String[] lines = content.split("\\r?\\n");
 
-            for (int i = 1; i < lines.length; i++) {
-                String line = lines[i].trim();
-                if (line.isEmpty()) continue;
+        try (CSVReader reader = new CSVReader(
+                new InputStreamReader(accountStatement.getInputStream(), StandardCharsets.UTF_8))) {
 
-                String[] fields = parseCsvLine(line);
-                if (fields.length < REQUIRED_COLUMNS) continue;
+            reader.skip(1); // skip header row
+
+            String[] row;
+            while ((row = reader.readNext()) != null) {
+                if (row.length == 0 || isBlank(row[0])) continue;
 
                 Debt debt = new Debt();
-                debt.setDescription(fields[COL_DESCRIPTION].trim());
-                debt.setOperationDate(fields[COL_OPERATION_DATE].trim());
-                debt.setOriginalAmount(new BigDecimal(fields[COL_ORIGINAL_AMOUNT].trim()));
-                debt.setMonthlyPayment(new BigDecimal(fields[COL_MONTHLY_PAYMENT].trim()));
-                debt.setCurrentInstallment(Integer.parseInt(fields[COL_CURRENT_INSTALLMENT].trim()));
-                debt.setMaxFinancingTerm(Integer.parseInt(fields[COL_MAX_FINANCING_TERM].trim()));
-                debt.setDebtType(DebtTypeEnum.valueOf(fields[COL_DEBT_TYPE].trim().toUpperCase()));
                 debt.setActive(true);
+                debt.setDebtAccount(debtAccount);
+
+                debt.setDescription(row[0].trim());
+                debt.setOperationDate(row.length > 1 ? blankToNull(row[1]) : null);
+                debt.setOriginalAmount(row.length > 2 ? parseBigDecimal(row[2]) : null);
+                debt.setMonthlyPayment(row.length > 3 ? parseBigDecimal(row[3]) : null);
+                debt.setCurrentInstallment(row.length > 4 ? parseIntOrDefault(row[4], 1) : 1);
+                debt.setMaxFinancingTerm(row.length > 5 ? parseIntOrDefault(row[5], 1) : 1);
+                debt.setDebtType(row.length > 6 ? parseDebtType(row[6]) : DebtTypeEnum.CARD);
+
                 debts.add(debt);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to read CSV file", e);
+        } catch (IOException | CsvValidationException e) {
+            throw new RuntimeException("Failed to parse CSV file", e);
         }
+
         return debts;
     }
 
-    /**
-     * Splits a CSV line respecting double-quoted fields (quotes allow embedded commas).
-     */
-    private String[] parseCsvLine(String line) {
-        List<String> fields = new ArrayList<>();
-        boolean inQuotes = false;
-        StringBuilder current = new StringBuilder();
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
 
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (c == '"') {
-                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
-                    current.append('"');
-                    i++;
-                } else {
-                    inQuotes = !inQuotes;
-                }
-            } else if (c == ',' && !inQuotes) {
-                fields.add(current.toString());
-                current = new StringBuilder();
-            } else {
-                current.append(c);
-            }
+    private String blankToNull(String value) {
+        return isBlank(value) ? null : value.trim();
+    }
+
+    private BigDecimal parseBigDecimal(String value) {
+        if (isBlank(value)) return null;
+        try {
+            return new BigDecimal(value.trim().replace(",", "."));
+        } catch (NumberFormatException e) {
+            return null;
         }
-        fields.add(current.toString());
-        return fields.toArray(new String[0]);
+    }
+
+    private Integer parseIntOrDefault(String value, int defaultValue) {
+        if (isBlank(value)) return defaultValue;
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private DebtTypeEnum parseDebtType(String value) {
+        if (isBlank(value)) return DebtTypeEnum.CARD;
+        try {
+            return DebtTypeEnum.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return DebtTypeEnum.CARD;
+        }
     }
 }
