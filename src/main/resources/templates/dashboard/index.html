@@ -6,129 +6,214 @@
     <title>Dashboard – Financial Manager</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .kpi-card .kpi-value { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+        .kpi-card .kpi-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; opacity: .8; }
+        .kpi-card .kpi-icon  { font-size: 2rem; opacity: .35; }
+        .advisor-card .remaining-balance { font-size: 1.4rem; font-weight: 700; }
+        .advisor-card .stat-pill { font-size: .78rem; color: #6c757d; }
+        .removed-row { opacity: .35; }
+    </style>
 </head>
 <body class="bg-light">
 
 <div th:replace="~{layout/navbar :: navbar}"></div>
 
-<div class="container">
+<div class="container py-4" th:if="${dashboard != null}">
     <h2 class="mb-4 fw-bold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h2>
 
-    <!-- Summary Cards -->
-    <div class="row g-3 mb-4" th:if="${dashboard != null}">
-        <!-- Row 1: income overview -->
-        <div class="col-sm-6 col-lg-4">
-            <div class="card border-0 shadow-sm text-bg-success">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Salary</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.salary, 1, 2)}">$0.00</div>
-                        </div>
-                        <i class="bi bi-cash-coin fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-4">
-            <div class="card border-0 shadow-sm text-bg-info">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Savings</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.savings, 1, 2)}">$0.00</div>
-                        </div>
-                        <i class="bi bi-piggy-bank fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-4">
-            <div th:class="${'card border-0 shadow-sm ' + (dashboard.availableIncome >= 0 ? 'text-bg-success' : 'text-bg-danger')}">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Available Income</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.availableIncome, 1, 2)}">$0.00</div>
-                            <div class="small opacity-75">After all commitments</div>
-                        </div>
-                        <i th:class="${'bi fs-2 opacity-50 ' + (dashboard.availableIncome >= 0 ? 'bi-wallet2' : 'bi-exclamation-circle')}"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Row 2: debt breakdown — all four types + fixed expenses -->
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm text-bg-danger">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Total Monthly Debt</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.totalMonthlyDebt, 1, 2)}">$0.00</div>
-                            <div class="small opacity-75">All types combined</div>
-                        </div>
-                        <i class="bi bi-graph-down-arrow fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm text-bg-warning">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Card &amp; People</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.monthlyDebtPaymentAmount, 1, 2)}">$0.00</div>
-                        </div>
-                        <i class="bi bi-credit-card fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm text-bg-secondary">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Life Plan</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.debtForLifePlanAmount, 1, 2)}">$0.00</div>
-                        </div>
-                        <i class="bi bi-journal-bookmark fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm text-bg-dark">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Loans</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.debtLoanAmount, 1, 2)}">$0.00</div>
-                        </div>
-                        <i class="bi bi-bank fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-lg-3">
-            <div class="card border-0 shadow-sm text-bg-primary">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="small fw-semibold text-uppercase opacity-75">Fixed Expenses</div>
-                            <div class="fs-4 fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.monthlyFixedExpensesAmount, 1, 2)}">$0.00</div>
-                        </div>
-                        <i class="bi bi-receipt fs-2 opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- ── Section 1: KPI Strip ──────────────────────────────────────────────── -->
+    <div class="row g-3 mb-4">
 
-    <!-- Charts -->
-    <div class="row g-3 mb-4" th:if="${dashboard != null}">
-        <!-- Donut: spending by category -->
+        <!-- Available Income -->
+        <div class="col-sm-6 col-xl">
+            <div th:class="${'card border-0 shadow-sm kpi-card h-100 ' + (dashboard.availableIncome >= 0 ? 'text-bg-success' : 'text-bg-danger')}">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-label">Available Income</div>
+                        <div class="kpi-value" th:text="${'$' + #numbers.formatDecimal(dashboard.availableIncome, 1, 2)}">$0.00</div>
+                        <div style="font-size:.72rem; opacity:.75;">After all commitments</div>
+                    </div>
+                    <i th:class="${'bi kpi-icon ' + (dashboard.availableIncome >= 0 ? 'bi-wallet2' : 'bi-exclamation-circle')}"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Commitments -->
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 shadow-sm kpi-card h-100 text-bg-danger">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-label">Total Commitments</div>
+                        <div class="kpi-value"
+                             th:text="${'$' + #numbers.formatDecimal(dashboard.totalMonthlyDebt + dashboard.monthlyFixedExpensesAmount, 1, 2)}">$0.00</div>
+                        <div style="font-size:.72rem; opacity:.75;">Debt + fixed expenses</div>
+                    </div>
+                    <i class="bi bi-graph-down-arrow kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debt-to-Income Ratio -->
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 shadow-sm kpi-card h-100 text-bg-light border">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-label text-muted">Debt-to-Income</div>
+                        <div class="kpi-value text-dark" th:if="${dashboard.debtToIncomeRatio != null}">
+                            <span th:text="${#numbers.formatDecimal(dashboard.debtToIncomeRatio, 1, 1) + '%'}">0%</span>
+                            <span th:if="${dashboard.debtToIncomeRatio < 30}"
+                                  class="badge text-bg-success ms-1" style="font-size:.6rem;">Healthy</span>
+                            <span th:if="${dashboard.debtToIncomeRatio >= 30 and dashboard.debtToIncomeRatio < 50}"
+                                  class="badge text-bg-warning ms-1" style="font-size:.6rem;">Moderate</span>
+                            <span th:if="${dashboard.debtToIncomeRatio >= 50}"
+                                  class="badge text-bg-danger ms-1" style="font-size:.6rem;">High</span>
+                        </div>
+                        <div class="kpi-value text-secondary" th:unless="${dashboard.debtToIncomeRatio != null}">N/A</div>
+                        <div style="font-size:.72rem; color:#6c757d;">of salary goes to debt</div>
+                    </div>
+                    <i class="bi bi-percent kpi-icon text-secondary"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Months to Debt-Free -->
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 shadow-sm kpi-card h-100 text-bg-primary">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-label">Months to Debt-Free</div>
+                        <div class="kpi-value" th:if="${dashboard.debtFreeMonths != null and dashboard.debtFreeMonths > 0}"
+                             th:text="${dashboard.debtFreeMonths + ' mo.'}">0 mo.</div>
+                        <div class="kpi-value" th:if="${dashboard.debtFreeMonths == null or dashboard.debtFreeMonths == 0}">
+                            <i class="bi bi-check-circle-fill"></i> Debt-free!
+                        </div>
+                        <div style="font-size:.72rem; opacity:.75;">Worst-case estimate</div>
+                    </div>
+                    <i class="bi bi-calendar-check kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Savings -->
+        <div class="col-sm-6 col-xl">
+            <div class="card border-0 shadow-sm kpi-card h-100 text-bg-info">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="kpi-label">Savings</div>
+                        <div class="kpi-value" th:text="${'$' + #numbers.formatDecimal(dashboard.savings, 1, 2)}">$0.00</div>
+                        <div style="font-size:.72rem; opacity:.75;" th:if="${dashboard.totalEstimatedRemainingBalance != null and dashboard.totalEstimatedRemainingBalance > 0}">
+                            <span th:text="${#numbers.formatDecimal(dashboard.savings / dashboard.totalEstimatedRemainingBalance * 100, 1, 0) + '% of total remaining debt'}">0%</span>
+                        </div>
+                    </div>
+                    <i class="bi bi-piggy-bank kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /KPI Strip -->
+
+    <!-- ── Section 2: Account Payoff Advisor ─────────────────────────────────── -->
+    <div class="card shadow-sm mb-4"
+         th:if="${dashboard.accountSummaries != null and !dashboard.accountSummaries.empty}">
+        <div class="card-header bg-white">
+            <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-cash-stack me-2 text-success"></i>Account Payoff Advisor
+                <small class="text-muted fw-normal ms-2" style="font-size:.8rem;">Can I pay off a card with my savings?</small>
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-sm-6 col-lg-4" th:each="acc : ${dashboard.accountSummaries}">
+                    <div class="card advisor-card h-100 border"
+                         th:classappend="${acc.payoffFeasible ? 'border-success' : ''}">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                            <span class="fw-semibold text-truncate me-2" th:text="${acc.name}">Account</span>
+                            <span th:if="${acc.payoffFeasible}"
+                                  class="badge text-bg-success text-nowrap">
+                                <i class="bi bi-check-circle-fill me-1"></i>Can Pay Off
+                            </span>
+                            <span th:unless="${acc.payoffFeasible}"
+                                  class="badge text-bg-secondary text-nowrap">Not Yet</span>
+                        </div>
+                        <div class="card-body pb-2">
+                            <div class="text-muted" style="font-size:.72rem;">Est. Remaining Balance</div>
+                            <div class="remaining-balance text-dark"
+                                 th:text="${'$' + #numbers.formatDecimal(acc.estimatedRemainingBalance, 1, 2)}">$0.00</div>
+
+                            <div class="d-flex gap-3 mt-2 stat-pill flex-wrap">
+                                <span><i class="bi bi-calendar-month me-1"></i><span th:text="${'$' + #numbers.formatDecimal(acc.monthlyTotal, 1, 2) + '/mo'}">$0/mo</span></span>
+                                <span><i class="bi bi-hourglass-split me-1"></i><span th:text="${acc.maxMonthsRemaining + ' mo. left'}">0 mo.</span></span>
+                                <span><i class="bi bi-list-check me-1"></i><span th:text="${acc.activeDebtCount + ' debts'}">0</span></span>
+                            </div>
+
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between" style="font-size:.72rem; color:#6c757d;">
+                                    <span>Savings coverage</span>
+                                    <span th:text="${#numbers.formatDecimal(acc.savingsCoveragePercent, 1, 0) + '%'}">0%</span>
+                                </div>
+                                <div class="progress mt-1" style="height:6px;">
+                                    <div class="progress-bar"
+                                         th:classappend="${acc.payoffFeasible ? 'bg-success' : 'bg-warning'}"
+                                         th:style="|width: ${#numbers.formatDecimal(acc.savingsCoveragePercent, 1, 0)}%|"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-0 pt-0">
+                            <a th:href="@{/ui/debt-accounts/{code}(code=${acc.code})}"
+                               class="btn btn-sm btn-outline-primary w-100">
+                                <i class="bi bi-eye me-1"></i>View Account
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- /Payoff Advisor -->
+
+    <!-- ── Section 3: "Can I Afford It?" Calculator ───────────────────────────── -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-calculator me-2 text-primary"></i>Can I Afford It?
+                <small class="text-muted fw-normal ms-2" style="font-size:.8rem;">See how a new purchase affects your budget</small>
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold" for="affordInput">Additional monthly cost ($)</label>
+                    <div class="input-group">
+                        <span class="input-group-text">$</span>
+                        <input type="number" id="affordInput" class="form-control form-control-lg"
+                               min="0" step="1" placeholder="0"
+                               oninput="updateAffordCalc(this.value)">
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="row g-3" id="affordResult" style="display:none!important;">
+                        <div class="col-sm-4">
+                            <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;">New Available Income</div>
+                            <div class="fs-5 fw-bold" id="affordNewIncome">$0.00</div>
+                        </div>
+                        <div class="col-sm-4" id="affordDtiCol">
+                            <div class="text-muted" style="font-size:.72rem; text-transform:uppercase; letter-spacing:.05em;">New D/I Ratio</div>
+                            <div class="fs-5 fw-bold" id="affordNewDti">—</div>
+                        </div>
+                        <div class="col-sm-4 d-flex align-items-center">
+                            <div id="affordVerdict" class="fw-semibold"></div>
+                        </div>
+                    </div>
+                    <div id="affordPrompt" class="text-muted fst-italic" style="font-size:.9rem;">
+                        Enter an amount to see your updated budget in real time.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- /Afford Calculator -->
+
+    <!-- ── Section 4: Charts ─────────────────────────────────────────────────── -->
+    <div class="row g-3 mb-4">
         <div class="col-md-5">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white">
@@ -139,7 +224,6 @@
                 </div>
             </div>
         </div>
-        <!-- Horizontal bar: per-account payment -->
         <div class="col-md-7">
             <div class="card shadow-sm h-100">
                 <div class="card-header bg-white">
@@ -152,58 +236,21 @@
         </div>
     </div>
 
-    <!-- Debt Accounts Table -->
-    <div class="card shadow-sm mb-4" th:if="${dashboard != null and !dashboard.userDebtAccounts.empty}">
+    <!-- ── Section 5: Almost Completed Debts ─────────────────────────────────── -->
+    <div class="card shadow-sm mb-4"
+         th:if="${dashboard.almostCompletedDebts != null and !dashboard.almostCompletedDebts.empty}">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold"><i class="bi bi-credit-card-2-front me-2"></i>Debt Accounts</h5>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-hover table-striped mb-0">
-                <thead class="table-dark">
-                <tr>
-                    <th>Code</th>
-                    <th>Name</th>
-                    <th>Provider</th>
-                    <th>Pay Day</th>
-                    <th>Credit</th>
-                    <th>Statement Type</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="account : ${dashboard.userDebtAccounts}">
-                    <td class="font-monospace" th:text="${account.code}"></td>
-                    <td th:text="${account.name}"></td>
-                    <td th:text="${account.financialProvider?.name}"></td>
-                    <td th:text="${account.payDay}"></td>
-                    <td th:text="${'$' + #numbers.formatDecimal(account.credit, 1, 2)}"></td>
-                    <td><span class="badge bg-secondary" th:text="${account.accountStatementType}"></span></td>
-                    <td>
-                        <a th:href="@{/ui/debt-accounts/{code}(code=${account.code})}"
-                           class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-eye"></i> View
-                        </a>
-                        <a th:href="@{/ui/payments/{code}(code=${account.code})}"
-                           class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-clock-history"></i> Payments
-                        </a>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Almost Completed Debts -->
-    <div class="card shadow-sm mb-4" th:if="${dashboard != null and !dashboard.almostCompletedDebts.empty}">
-        <div class="card-header bg-white">
-            <h5 class="mb-0 fw-semibold"><i class="bi bi-check2-circle me-2 text-success"></i>Almost Completed Debts</h5>
+            <h5 class="mb-0 fw-semibold"><i class="bi bi-check2-circle me-2 text-success"></i>Finishing Soon</h5>
+            <span class="badge text-bg-success"
+                  th:if="${dashboard.almostCompletedMonthlyRelief != null and dashboard.almostCompletedMonthlyRelief > 0}"
+                  th:text="${'Freeing up $' + #numbers.formatDecimal(dashboard.almostCompletedMonthlyRelief, 1, 2) + '/mo'}">
+            </span>
         </div>
         <div class="table-responsive">
             <table class="table table-hover mb-0">
                 <thead class="table-success">
                 <tr>
-                    <th>Code</th>
+                    <th>Account</th>
                     <th>Description</th>
                     <th>Monthly Payment</th>
                     <th>Progress</th>
@@ -224,8 +271,6 @@
                             <small class="text-muted text-nowrap"
                                    th:text="${debt.currentInstallment + '/' + debt.maxFinancingTerm}"></small>
                         </div>
-                        <span th:unless="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
-                              class="text-muted small">&#8212;</span>
                     </td>
                 </tr>
                 </tbody>
@@ -233,35 +278,48 @@
         </div>
     </div>
 
-    <!-- Fixed Expenses -->
-    <div class="card shadow-sm mb-4" th:if="${dashboard != null and !dashboard.userFixedExpenses.empty}">
+    <!-- ── Section 6: Fixed Expenses (collapsible) ───────────────────────────── -->
+    <div class="card shadow-sm mb-4"
+         th:if="${dashboard.userFixedExpenses != null and !dashboard.userFixedExpenses.empty}">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold"><i class="bi bi-receipt me-2"></i>Fixed Expenses</h5>
+            <h5 class="mb-0 fw-semibold">
+                <a class="text-decoration-none text-dark"
+                   data-bs-toggle="collapse" href="#fixedExpCollapse"
+                   role="button" aria-expanded="false">
+                    <i class="bi bi-receipt me-2"></i>Fixed Expenses
+                    <i class="bi bi-chevron-down ms-1" style="font-size:.8rem;"></i>
+                </a>
+            </h5>
             <a th:href="@{/ui/fixed-expenses}" class="btn btn-sm btn-outline-primary">Manage</a>
         </div>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                <tr>
-                    <th>Name</th>
-                    <th>Category</th>
-                    <th>Monthly Cost</th>
-                    <th>Pay Day</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr th:each="expense : ${dashboard.userFixedExpenses}">
-                    <td th:text="${expense.name}"></td>
-                    <td th:text="${expense.fixedExpenseCatalog?.name}"></td>
-                    <td th:text="${'$' + #numbers.formatDecimal(expense.monthlyCost, 1, 2)}"></td>
-                    <td th:text="${expense.paymentDay}"></td>
-                </tr>
-                </tbody>
-            </table>
+        <div class="collapse" id="fixedExpCollapse">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Monthly Cost</th>
+                        <th>Pay Day</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="expense : ${dashboard.userFixedExpenses}">
+                        <td th:text="${expense.name}"></td>
+                        <td th:text="${expense.fixedExpenseCatalog?.name}"></td>
+                        <td th:text="${'$' + #numbers.formatDecimal(expense.monthlyCost, 1, 2)}"></td>
+                        <td th:text="${expense.paymentDay}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <div class="alert alert-info" th:if="${dashboard == null}">
+</div><!-- /container -->
+
+<div class="container py-4" th:unless="${dashboard != null}">
+    <div class="alert alert-info">
         <i class="bi bi-info-circle me-2"></i>No financial data found for this account.
     </div>
 </div>
@@ -286,22 +344,13 @@
         type: 'doughnut',
         data: {
             labels: catLabels,
-            datasets: [{
-                data: catValues,
-                backgroundColor: catColors,
-                borderWidth: 2,
-                borderColor: '#fff'
-            }]
+            datasets: [{data: catValues, backgroundColor: catColors, borderWidth: 2, borderColor: '#fff'}]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: { position: 'bottom', labels: { padding: 16, font: { size: 13 } } },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ' ' + ctx.label + ': ' + fmt(ctx.parsed)
-                    }
-                }
+                legend: {position: 'bottom', labels: {padding: 16, font: {size: 13}}},
+                tooltip: {callbacks: {label: ctx => ' ' + ctx.label + ': ' + fmt(ctx.parsed)}}
             }
         }
     });
@@ -318,8 +367,8 @@
                 datasets: [{
                     label: 'Monthly Payment',
                     data: accAmounts,
-                    backgroundColor: 'rgba(13, 110, 253, 0.75)',
-                    borderColor: 'rgba(13, 110, 253, 1)',
+                    backgroundColor: 'rgba(13,110,253,0.75)',
+                    borderColor: 'rgba(13,110,253,1)',
                     borderWidth: 1,
                     borderRadius: 4
                 }]
@@ -328,21 +377,65 @@
                 indexAxis: 'y',
                 responsive: true,
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: { label: ctx => ' ' + fmt(ctx.parsed.x) }
-                    }
+                    legend: {display: false},
+                    tooltip: {callbacks: {label: ctx => ' ' + fmt(ctx.parsed.x)}}
                 },
                 scales: {
-                    x: {
-                        ticks: { callback: v => '$' + v.toLocaleString() },
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    },
-                    y: { grid: { display: false } }
+                    x: {ticks: {callback: v => '$' + v.toLocaleString()}, grid: {color: 'rgba(0,0,0,0.05)'}},
+                    y: {grid: {display: false}}
                 }
             }
         });
     }
+
+    /* ── Afford Calculator ───────────────────────────────────────── */
+    const serverAvailableIncome   = /*[[${dashboard.availableIncome}]]*/ 0;
+    const serverTotalCommitments  = /*[[${dashboard.totalMonthlyDebt + dashboard.monthlyFixedExpensesAmount}]]*/ 0;
+    const serverSalary            = /*[[${dashboard.salary != null ? dashboard.salary : 0}]]*/ 0;
+
+    window.updateAffordCalc = function(rawVal) {
+        const amount = parseFloat(rawVal) || 0;
+        const prompt  = document.getElementById('affordPrompt');
+        const result  = document.getElementById('affordResult');
+
+        if (amount <= 0) {
+            prompt.style.removeProperty('display');
+            result.style.setProperty('display', 'none', 'important');
+            return;
+        }
+
+        prompt.style.setProperty('display', 'none', 'important');
+        result.style.removeProperty('display');
+        result.style.display = 'flex';
+
+        const newIncome = serverAvailableIncome - amount;
+        const incomeEl  = document.getElementById('affordNewIncome');
+        incomeEl.textContent = fmt(newIncome);
+        incomeEl.className   = 'fs-5 fw-bold ' + (newIncome >= 0 ? 'text-success' : 'text-danger');
+
+        const dtiEl     = document.getElementById('affordNewDti');
+        const dtiColEl  = document.getElementById('affordDtiCol');
+        if (serverSalary > 0) {
+            const newDti    = ((serverTotalCommitments + amount) / serverSalary) * 100;
+            const dtiClass  = newDti < 30 ? 'text-success' : newDti < 50 ? 'text-warning' : 'text-danger';
+            const dtiBadge  = newDti < 30 ? 'Healthy' : newDti < 50 ? 'Moderate' : 'High';
+            dtiEl.innerHTML = `<span class="${dtiClass}">${newDti.toFixed(1)}%</span> <span class="badge ${newDti < 30 ? 'text-bg-success' : newDti < 50 ? 'text-bg-warning' : 'text-bg-danger'}" style="font-size:.6rem">${dtiBadge}</span>`;
+            dtiColEl.style.removeProperty('display');
+        } else {
+            dtiColEl.style.display = 'none';
+        }
+
+        const verdictEl = document.getElementById('affordVerdict');
+        if (newIncome < 0) {
+            verdictEl.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Would exceed income</span>';
+        } else if (newIncome < serverTotalCommitments * 0.1) {
+            verdictEl.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>Very tight budget</span>';
+        } else if (serverSalary > 0 && ((serverTotalCommitments + amount) / serverSalary) >= 0.5) {
+            verdictEl.innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-1"></i>Tight budget</span>';
+        } else {
+            verdictEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Looks affordable</span>';
+        }
+    };
 })();
 </script>
 </body>
