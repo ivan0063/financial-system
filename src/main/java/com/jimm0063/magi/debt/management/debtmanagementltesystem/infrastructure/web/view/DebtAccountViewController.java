@@ -9,6 +9,9 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.De
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.mapper.DebtAccountMapper;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.model.CreateDebtAccountReq;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -84,6 +87,17 @@ public class DebtAccountViewController {
         return providerCode != null
                 ? "redirect:/ui/debt-accounts?providerCode=" + providerCode
                 : "redirect:/ui/dashboard";
+    }
+
+    @GetMapping("/csv-template")
+    public ResponseEntity<byte[]> downloadCsvTemplate() {
+        String csv = "description,operationDate,originalAmount,monthlyPayment,currentInstallment,maxFinancingTerm,debtType\n";
+        byte[] content = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"debts-template.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .contentLength(content.length)
+                .body(content);
     }
 
     @GetMapping("/{code}")
