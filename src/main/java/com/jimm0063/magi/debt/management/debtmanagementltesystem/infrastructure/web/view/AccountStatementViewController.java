@@ -13,6 +13,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.De
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.mapper.DebtMapper;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.model.DebtListForm;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.model.DebtTypeOverrideReq;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -27,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/ui/statements")
@@ -147,9 +150,12 @@ public class AccountStatementViewController {
 
     /** Persist option B — deactivate obsolete debts then save/update from extracted list. */
     @PostMapping("/{debtAccountCode}/sync")
-    public String sync(@PathVariable String debtAccountCode, HttpSession session) {
+    public String sync(
+            @PathVariable String debtAccountCode,
+            @ModelAttribute("form") DebtListForm form,
+            HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        List<Debt> debts = getExtractedDebts(session);
+        List<Debt> debts = applyTypeOverrides(getExtractedDebts(session), form.getTypeOverrides());
         if (debts == null) return "redirect:/ui/statements/" + debtAccountCode;
         filterDebtsUseCase.deactivateObsoleteDebts(debts, debtAccountCode);
         List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
@@ -160,9 +166,12 @@ public class AccountStatementViewController {
 
     /** Persist option C — wipe all existing debts and import statement as source of truth. */
     @PostMapping("/{debtAccountCode}/replace")
-    public String replace(@PathVariable String debtAccountCode, HttpSession session) {
+    public String replace(
+            @PathVariable String debtAccountCode,
+            @ModelAttribute("form") DebtListForm form,
+            HttpSession session) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
-        List<Debt> debts = getExtractedDebts(session);
+        List<Debt> debts = applyTypeOverrides(getExtractedDebts(session), form.getTypeOverrides());
         if (debts == null) return "redirect:/ui/statements/" + debtAccountCode;
         List<Debt> saved = sourceOfTruthImportUseCase.replaceAllWithStatement(debts, debtAccountCode);
         activityLogHelper.log(session, "Source of Truth Replace — " + debtAccountCode, saved);
@@ -174,6 +183,20 @@ public class AccountStatementViewController {
     private List<Debt> getExtractedDebts(HttpSession session) {
         Object attr = session.getAttribute("extractedDebts");
         return (attr instanceof List<?>) ? (List<Debt>) attr : null;
+    }
+
+    private List<Debt> applyTypeOverrides(List<Debt> debts, List<DebtTypeOverrideReq> overrides) {
+        if (debts == null || overrides == null || overrides.isEmpty()) return debts;
+        Map<String, DebtTypeEnum> overrideMap = overrides.stream()
+                .filter(o -> o.getHashSum() != null && o.getDebtType() != null)
+                .collect(Collectors.toMap(DebtTypeOverrideReq::getHashSum, DebtTypeOverrideReq::getDebtType,
+                        (a, b) -> b));
+        debts.forEach(d -> {
+            if (d.getHashSum() != null && overrideMap.containsKey(d.getHashSum())) {
+                d.setDebtType(overrideMap.get(d.getHashSum()));
+            }
+        });
+        return debts;
     }
 
     private void clearSession(HttpSession session) {

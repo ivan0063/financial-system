@@ -54,7 +54,7 @@
     </div>
 
     <!-- Actions -->
-    <div class="d-flex gap-2 mb-4">
+    <div class="d-flex gap-2 mb-4 flex-wrap">
         <a th:href="@{/ui/statements/{code}(code=${debtAccountCode})}" class="btn btn-primary">
             <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload Statement
         </a>
@@ -67,6 +67,37 @@
         <a th:href="@{/ui/payments/{code}(code=${debtAccountCode})}" class="btn btn-outline-secondary">
             <i class="bi bi-clock-history me-1"></i>Payment History
         </a>
+    </div>
+
+    <!-- CSV Upload -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-0 fw-semibold"><i class="bi bi-filetype-csv me-2 text-success"></i>Bulk Upload via CSV</h6>
+                <small class="text-muted">Upload multiple debts at once using a CSV file.</small>
+            </div>
+            <a th:href="@{/ui/debt-accounts/csv-template}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-download me-1"></i>Download Template
+            </a>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/ui/statements/{code}/extract(code=${debtAccountCode})}"
+                  method="post" enctype="multipart/form-data" class="row g-2 align-items-end">
+                <input type="hidden" name="accountStatementType" value="CSV_UPLOAD">
+                <div class="col-sm-8">
+                    <label class="form-label fw-semibold mb-1">Select CSV File</label>
+                    <input type="file" name="file" class="form-control" accept=".csv" required>
+                    <div class="form-text">
+                        Required columns: <code>description, operationDate, originalAmount, monthlyPayment, currentInstallment, maxFinancingTerm, debtType</code>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-upload me-2"></i>Upload &amp; Preview
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- Add Debt Form -->
