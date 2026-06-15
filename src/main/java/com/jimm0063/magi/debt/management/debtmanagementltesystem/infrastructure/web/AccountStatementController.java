@@ -85,7 +85,8 @@ public class AccountStatementController {
     public ResponseEntity<List<Debt>> syncDebts(
             @RequestParam("file") MultipartFile accountStatement,
             @PathVariable String debtAccountCode,
-            @RequestParam AccountStatementType accountStatementType) throws IOException {
+            @RequestParam AccountStatementType accountStatementType,
+            @RequestParam(required = false) List<String> overrideIgnoredHashes) throws IOException {
         List<Debt> statementDebts = extractFromFileUseCase.extractDebts(accountStatement, debtAccountCode, accountStatementType)
                 .stream()
                 .peek(d -> d.setHashSum(this.debtDuplicationPreventUseCase.getHashSum(d, debtAccountCode)))
@@ -93,7 +94,8 @@ public class AccountStatementController {
 
         this.filterDebtsUseCase.deactivateObsoleteDebts(statementDebts, debtAccountCode);
 
-        List<Debt> saved = this.loadDebtList.saveUnrepeated(statementDebts, debtAccountCode);
+        List<String> overrides = overrideIgnoredHashes != null ? overrideIgnoredHashes : List.of();
+        List<Debt> saved = this.loadDebtList.saveUnrepeated(statementDebts, debtAccountCode, overrides);
         return ResponseEntity.ok(saved);
     }
 }

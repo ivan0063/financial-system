@@ -7,5 +7,6 @@ import java.util.List;
 public record AccountStatementPreviewDto(
         List<Debt> newDebts,
         List<DebtInstallmentUpdateDto> installmentUpdates,
-        List<Debt> completedDebts
+        List<Debt> completedDebts,
+        List<IgnoredDebtPreviewDto> ignoredDebts
 ) {}
