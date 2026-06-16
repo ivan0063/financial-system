@@ -15,8 +15,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -67,10 +71,36 @@ public class FixedExpenseViewController {
         return "redirect:/ui/fixed-expenses";
     }
 
+    @PutMapping("/{id}")
+    public String editExpense(@PathVariable Integer id, @ModelAttribute FixedExpenseReq req, HttpSession session) {
+        req.setId(id);
+        var updated = fixedExpenseRepository.updateFromReq(req);
+        activityLogHelper.log(session, "Edit Fixed Expense", updated);
+        return "redirect:/ui/fixed-expenses";
+    }
+
     @DeleteMapping("/{id}")
     public String deleteExpense(@PathVariable Integer id, HttpSession session) {
         fixedExpenseRepository.delete(id);
         activityLogHelper.log(session, "Delete Fixed Expense", Map.of("deleted", true, "id", id));
+        return "redirect:/ui/fixed-expenses";
+    }
+
+    @PutMapping("/bulk-edit")
+    public String bulkEditExpenses(@RequestParam List<Integer> ids,
+                                    @RequestParam(required = false) Integer catalogId,
+                                    @RequestParam(required = false) Double monthlyCost,
+                                    HttpSession session) {
+        var updated = fixedExpenseRepository.bulkUpdateCategoryAndCost(
+                ids, catalogId, monthlyCost != null ? BigDecimal.valueOf(monthlyCost) : null);
+        activityLogHelper.log(session, "Bulk Edit Fixed Expenses", updated);
+        return "redirect:/ui/fixed-expenses";
+    }
+
+    @DeleteMapping("/bulk-delete")
+    public String bulkDeleteExpenses(@RequestParam List<Integer> ids, HttpSession session) {
+        fixedExpenseRepository.deleteMultiple(ids);
+        activityLogHelper.log(session, "Bulk Delete Fixed Expenses", Map.of("deleted", true, "ids", ids));
         return "redirect:/ui/fixed-expenses";
     }
 

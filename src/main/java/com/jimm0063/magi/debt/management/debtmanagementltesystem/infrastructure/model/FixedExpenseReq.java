@@ -5,9 +5,11 @@ import lombok.Setter;
 
 @Setter @Getter
 public class FixedExpenseReq {
+    private Integer id;
     private String name;
     private Double monthlyCost;
     private Integer paymentDay;
+    private String description;
     private String userEmail;
     private Integer catalogId;
 }

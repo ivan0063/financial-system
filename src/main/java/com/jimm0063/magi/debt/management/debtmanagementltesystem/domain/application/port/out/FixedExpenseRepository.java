@@ -4,6 +4,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.De
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.FixedExpense;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.model.FixedExpenseReq;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,5 +14,9 @@ public interface FixedExpenseRepository {
     Optional<FixedExpense> findByIdAndActiveTrue(Integer fixedExpenseId);
     FixedExpense save(FixedExpenseReq fixedExpense, Integer fixedExpenseCatalogId);
     FixedExpense update(FixedExpense fixedExpense);
+    FixedExpense updateFromReq(FixedExpenseReq req);
+    List<FixedExpense> updateMultiple(List<FixedExpenseReq> reqs);
+    List<FixedExpense> bulkUpdateCategoryAndCost(List<Integer> ids, Integer catalogId, BigDecimal monthlyCost);
     void delete(Integer fixedExpenseId);
+    void deleteMultiple(List<Integer> ids);
 }

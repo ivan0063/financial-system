@@ -30,4 +30,7 @@ public class UserStatusDashboard {
     private Double totalEstimatedRemainingBalance;
     private Double almostCompletedMonthlyRelief;
     private List<AccountSummaryDto> accountSummaries;
+    private List<CategoryAmountDto> fixedExpenseBreakdownByCategory;
+    private Double fixedExpensePercentOfIncome;
+    private Integer fixedExpenseCount;
 }

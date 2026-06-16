@@ -12,6 +12,7 @@ public class FixedExpense {
     private String name;
     private BigDecimal monthlyCost;
     private Integer paymentDay;
+    private String description;
     private Boolean active;
     private DebtSysUser debtSysUser;
     private FixedExpenseCatalog fixedExpenseCatalog;

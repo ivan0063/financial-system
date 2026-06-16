@@ -292,26 +292,51 @@
             </h5>
             <a th:href="@{/ui/fixed-expenses}" class="btn btn-sm btn-outline-primary">Manage</a>
         </div>
+        <div class="card-body border-bottom py-2">
+            <div class="row text-center g-2">
+                <div class="col-4">
+                    <div class="text-muted" style="font-size:.72rem;">TOTAL / MONTH</div>
+                    <div class="fw-bold" th:text="${'$' + #numbers.formatDecimal(dashboard.monthlyFixedExpensesAmount, 1, 2)}"></div>
+                </div>
+                <div class="col-4">
+                    <div class="text-muted" style="font-size:.72rem;">% OF INCOME</div>
+                    <div class="fw-bold" th:text="${dashboard.fixedExpensePercentOfIncome != null ? #numbers.formatDecimal(dashboard.fixedExpensePercentOfIncome, 1, 1) + '%' : 'N/A'}"></div>
+                </div>
+                <div class="col-4">
+                    <div class="text-muted" style="font-size:.72rem;">ACTIVE EXPENSES</div>
+                    <div class="fw-bold" th:text="${dashboard.fixedExpenseCount}"></div>
+                </div>
+            </div>
+        </div>
         <div class="collapse" id="fixedExpCollapse">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Category</th>
-                        <th>Monthly Cost</th>
-                        <th>Pay Day</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr th:each="expense : ${dashboard.userFixedExpenses}">
-                        <td th:text="${expense.name}"></td>
-                        <td th:text="${expense.fixedExpenseCatalog?.name}"></td>
-                        <td th:text="${'$' + #numbers.formatDecimal(expense.monthlyCost, 1, 2)}"></td>
-                        <td th:text="${expense.paymentDay}"></td>
-                    </tr>
-                    </tbody>
-                </table>
+            <div class="row g-0">
+                <div class="col-lg-7">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Category</th>
+                                <th>Monthly Cost</th>
+                                <th>Pay Day</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="expense : ${dashboard.userFixedExpenses}">
+                                <td th:text="${expense.name}"></td>
+                                <td th:text="${expense.description}"></td>
+                                <td th:text="${expense.fixedExpenseCatalog?.name}"></td>
+                                <td th:text="${'$' + #numbers.formatDecimal(expense.monthlyCost, 1, 2)}"></td>
+                                <td th:text="${expense.paymentDay}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-5 p-3" th:if="${dashboard.fixedExpenseBreakdownByCategory != null and !dashboard.fixedExpenseBreakdownByCategory.empty}">
+                    <canvas id="fixedExpenseCategoryChart" height="220"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -369,6 +394,39 @@
                     data: accAmounts,
                     backgroundColor: 'rgba(13,110,253,0.75)',
                     borderColor: 'rgba(13,110,253,1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: {display: false},
+                    tooltip: {callbacks: {label: ctx => ' ' + fmt(ctx.parsed.x)}}
+                },
+                scales: {
+                    x: {ticks: {callback: v => '$' + v.toLocaleString()}, grid: {color: 'rgba(0,0,0,0.05)'}},
+                    y: {grid: {display: false}}
+                }
+            }
+        });
+    }
+
+    /* ── Bar: fixed expenses by category ──────────────────────────── */
+    const fixedExpCategories = /*[[${dashboard.fixedExpenseBreakdownByCategory}]]*/ [];
+    const fixedExpCanvas = document.getElementById('fixedExpenseCategoryChart');
+
+    if (fixedExpCanvas && fixedExpCategories.length > 0) {
+        new Chart(fixedExpCanvas, {
+            type: 'bar',
+            data: {
+                labels: fixedExpCategories.map(c => c.category),
+                datasets: [{
+                    label: 'Monthly Cost',
+                    data: fixedExpCategories.map(c => c.amount),
+                    backgroundColor: 'rgba(13,202,240,0.75)',
+                    borderColor: 'rgba(13,202,240,1)',
                     borderWidth: 1,
                     borderRadius: 4
                 }]
