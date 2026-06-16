@@ -63,13 +63,24 @@ public class FixedExpenseController {
     }
 
     @PutMapping
-    public ResponseEntity<FixedExpense> updateFixedExpense(@RequestBody FixedExpense fixedExpense) {
-        return ResponseEntity.ok(fixedExpenseRepository.update(fixedExpense));
+    public ResponseEntity<FixedExpense> updateFixedExpense(@RequestBody FixedExpenseReq fixedExpenseReq) {
+        return ResponseEntity.ok(fixedExpenseRepository.updateFromReq(fixedExpenseReq));
+    }
+
+    @PutMapping("/bulk")
+    public ResponseEntity<List<FixedExpense>> updateFixedExpenses(@RequestBody List<FixedExpenseReq> fixedExpenseReqs) {
+        return ResponseEntity.ok(fixedExpenseRepository.updateMultiple(fixedExpenseReqs));
     }
 
     @DeleteMapping("/{fixedExpenseId}")
     public ResponseEntity deleteFixedExpense(@PathVariable Integer fixedExpenseId) {
         fixedExpenseRepository.delete(fixedExpenseId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/bulk")
+    public ResponseEntity deleteFixedExpenses(@RequestBody List<Integer> fixedExpenseIds) {
+        fixedExpenseRepository.deleteMultiple(fixedExpenseIds);
         return ResponseEntity.ok().build();
     }
 

@@ -20,6 +20,7 @@ public class FixedExpenseEntity implements Serializable {
     private BigDecimal monthlyCost;
     @Column(name = "payment_day")
     private Integer paymentDay;
+    private String description;
     private Boolean active;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "debt_sys_user", nullable = false)

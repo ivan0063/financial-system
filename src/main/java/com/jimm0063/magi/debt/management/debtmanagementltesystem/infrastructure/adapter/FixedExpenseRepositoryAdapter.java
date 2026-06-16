@@ -14,7 +14,9 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.persistence.FixedExpenseCatalogJpaRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.persistence.FixedExpenseJpaRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -88,5 +90,64 @@ public class FixedExpenseRepositoryAdapter implements FixedExpenseRepository {
                         .orElseThrow(()->new EntityNotFoundException("FixedExpense with id " + fixedExpenseId + " not found"));
         fixedExpenseEntity.setActive(false);
         this.fixedExpenseJpaRepository.save(fixedExpenseEntity);
+    }
+
+    @Override
+    public FixedExpense updateFromReq(FixedExpenseReq req) {
+        FixedExpenseEntity fixedExpenseEntity = applyReq(req);
+        return fixedExpenseMapper.toModel(fixedExpenseJpaRepository.save(fixedExpenseEntity));
+    }
+
+    @Override
+    @Transactional
+    public List<FixedExpense> updateMultiple(List<FixedExpenseReq> reqs) {
+        return reqs.stream()
+                .map(this::applyReq)
+                .map(fixedExpenseJpaRepository::save)
+                .map(fixedExpenseMapper::toModel)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public List<FixedExpense> bulkUpdateCategoryAndCost(List<Integer> ids, Integer catalogId, BigDecimal monthlyCost) {
+        FixedExpenseCatalogEntity catalog = catalogId != null
+                ? fixedExpenseCatalogJpaRepository.findById(catalogId)
+                        .orElseThrow(() -> new EntityNotFoundException("Catalog " + catalogId + " not found"))
+                : null;
+
+        return ids.stream()
+                .map(id -> fixedExpenseJpaRepository.findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException("FixedExpense with id " + id + " not found")))
+                .map(entity -> {
+                    if (catalog != null) entity.setFixedExpenseCatalog(catalog);
+                    if (monthlyCost != null) entity.setMonthlyCost(monthlyCost);
+                    return entity;
+                })
+                .map(fixedExpenseJpaRepository::save)
+                .map(fixedExpenseMapper::toModel)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void deleteMultiple(List<Integer> ids) {
+        ids.forEach(this::delete);
+    }
+
+    private FixedExpenseEntity applyReq(FixedExpenseReq req) {
+        FixedExpenseEntity fixedExpenseEntity = fixedExpenseJpaRepository.findById(req.getId())
+                .orElseThrow(() -> new EntityNotFoundException("FixedExpense with id " + req.getId() + " not found"));
+
+        if (req.getName() != null) fixedExpenseEntity.setName(req.getName());
+        if (req.getMonthlyCost() != null) fixedExpenseEntity.setMonthlyCost(BigDecimal.valueOf(req.getMonthlyCost()));
+        if (req.getPaymentDay() != null) fixedExpenseEntity.setPaymentDay(req.getPaymentDay());
+        if (req.getDescription() != null) fixedExpenseEntity.setDescription(req.getDescription());
+        if (req.getCatalogId() != null) {
+            FixedExpenseCatalogEntity catalog = fixedExpenseCatalogJpaRepository.findById(req.getCatalogId())
+                    .orElseThrow(() -> new EntityNotFoundException("Catalog " + req.getCatalogId() + " not found"));
+            fixedExpenseEntity.setFixedExpenseCatalog(catalog);
+        }
+        return fixedExpenseEntity;
     }
 }

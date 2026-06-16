@@ -4,6 +4,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.*;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountSummaryDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AlmostCompletedDebtsDto;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.CategoryAmountDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.UserStatusDashboard;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.EntityNotFoundException;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -166,8 +168,37 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
                 .filter(Objects::nonNull)
                 .toList();
 
+        // Fixed expense breakdown by category
+        Map<String, Double> fixedExpenseByCategory = userFixedExpenses.stream()
+                .filter(e -> e.getMonthlyCost() != null && e.getFixedExpenseCatalog() != null)
+                .collect(Collectors.groupingBy(e -> e.getFixedExpenseCatalog().getName(),
+                        Collectors.summingDouble(e -> e.getMonthlyCost().doubleValue())));
+
+        List<CategoryAmountDto> fixedExpenseBreakdown = fixedExpenseByCategory.entrySet().stream()
+                .map(en -> {
+                    CategoryAmountDto dto = new CategoryAmountDto();
+                    dto.setCategory(en.getKey());
+                    dto.setAmount(Math.round(en.getValue() * 100.0) / 100.0);
+                    return dto;
+                })
+                .sorted(Comparator.comparing(CategoryAmountDto::getAmount).reversed())
+                .toList();
+
         double salary = user.getSalary() != null ? user.getSalary() : 0.0;
         double totalCommitments = totalMonthlyDebt + fixedExpensesMonthAmount;
+        Double fixedExpensePercentOfIncome = salary > 0
+                ? Math.round((fixedExpensesMonthAmount / salary) * 10000.0) / 100.0
+                : null;
+
+        // How many months of total commitments the current savings could cover
+        Double savingsRunwayMonths = totalCommitments > 0
+                ? Math.round((userSavings / totalCommitments) * 10.0) / 10.0
+                : null;
+
+        // Share of salary left after all commitments (can be negative if over-committed)
+        Double disposableIncomeRate = salary > 0
+                ? Math.round((availableIncome / salary) * 10000.0) / 100.0
+                : null;
         Double dti = salary > 0
                 ? Math.round((totalCommitments / salary) * 10000.0) / 100.0
                 : null;
@@ -205,6 +236,11 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
         response.setDebtFreeMonths(debtFreeMonths);
         response.setTotalEstimatedRemainingBalance(totalRemainingBalance);
         response.setAlmostCompletedMonthlyRelief(Math.round(almostCompletedRelief * 100.0) / 100.0);
+        response.setFixedExpenseBreakdownByCategory(fixedExpenseBreakdown);
+        response.setFixedExpensePercentOfIncome(fixedExpensePercentOfIncome);
+        response.setFixedExpenseCount(userFixedExpenses.size());
+        response.setSavingsRunwayMonths(savingsRunwayMonths);
+        response.setDisposableIncomeRate(disposableIncomeRate);
 
         return response;
     }
