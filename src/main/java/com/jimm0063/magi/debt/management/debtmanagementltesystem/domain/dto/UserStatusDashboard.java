@@ -33,4 +33,8 @@ public class UserStatusDashboard {
     private List<CategoryAmountDto> fixedExpenseBreakdownByCategory;
     private Double fixedExpensePercentOfIncome;
     private Integer fixedExpenseCount;
+
+    // Salary & savings insights
+    private Double savingsRunwayMonths;
+    private Double disposableIncomeRate;
 }

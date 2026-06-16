@@ -189,6 +189,16 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
         Double fixedExpensePercentOfIncome = salary > 0
                 ? Math.round((fixedExpensesMonthAmount / salary) * 10000.0) / 100.0
                 : null;
+
+        // How many months of total commitments the current savings could cover
+        Double savingsRunwayMonths = totalCommitments > 0
+                ? Math.round((userSavings / totalCommitments) * 10.0) / 10.0
+                : null;
+
+        // Share of salary left after all commitments (can be negative if over-committed)
+        Double disposableIncomeRate = salary > 0
+                ? Math.round((availableIncome / salary) * 10000.0) / 100.0
+                : null;
         Double dti = salary > 0
                 ? Math.round((totalCommitments / salary) * 10000.0) / 100.0
                 : null;
@@ -229,6 +239,8 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
         response.setFixedExpenseBreakdownByCategory(fixedExpenseBreakdown);
         response.setFixedExpensePercentOfIncome(fixedExpensePercentOfIncome);
         response.setFixedExpenseCount(userFixedExpenses.size());
+        response.setSavingsRunwayMonths(savingsRunwayMonths);
+        response.setDisposableIncomeRate(disposableIncomeRate);
 
         return response;
     }

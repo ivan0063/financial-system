@@ -1,11 +1,13 @@
 package com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure.web.view;
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.GetFinancialStatusUseCase;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.UserRepository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -14,9 +16,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class DashboardViewController {
 
     private final GetFinancialStatusUseCase getFinancialStatusUseCase;
+    private final UserRepository userRepository;
+    private final ActivityLogHelper activityLogHelper;
 
-    public DashboardViewController(GetFinancialStatusUseCase getFinancialStatusUseCase) {
+    public DashboardViewController(GetFinancialStatusUseCase getFinancialStatusUseCase,
+                                   UserRepository userRepository,
+                                   ActivityLogHelper activityLogHelper) {
         this.getFinancialStatusUseCase = getFinancialStatusUseCase;
+        this.userRepository = userRepository;
+        this.activityLogHelper = activityLogHelper;
     }
 
     @GetMapping
@@ -40,5 +48,16 @@ public class DashboardViewController {
         model.addAttribute("dashboard", getFinancialStatusUseCase.getUserStatus(email));
         model.addAttribute("email", email);
         return "dashboard/index";
+    }
+
+    @PutMapping("/financials")
+    public String updateFinancials(@RequestParam(required = false) Double salary,
+                                   @RequestParam(required = false) Double savings,
+                                   HttpSession session) {
+        String email = (String) session.getAttribute("userEmail");
+        if (email == null) return "redirect:/ui";
+        var updated = userRepository.updateFinancials(email, salary, savings);
+        activityLogHelper.log(session, "Update Salary & Savings", updated);
+        return "redirect:/ui/dashboard";
     }
 }
