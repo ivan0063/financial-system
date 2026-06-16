@@ -5,5 +5,8 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.De
 import java.util.List;
 
 public interface LoadDebtList {
-    List<Debt> saveUnrepeated(List<Debt> debts, String debtAccountCode);
+    default List<Debt> saveUnrepeated(List<Debt> debts, String debtAccountCode) {
+        return saveUnrepeated(debts, debtAccountCode, List.of());
+    }
+    List<Debt> saveUnrepeated(List<Debt> debts, String debtAccountCode, List<String> overrideIgnoredHashes);
 }

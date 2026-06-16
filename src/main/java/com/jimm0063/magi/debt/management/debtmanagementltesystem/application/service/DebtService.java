@@ -3,11 +3,14 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.application.se
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.*;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtRepository;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.IgnorableDebtRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountStatementPreviewDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.DebtInstallmentUpdateDto;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.IgnoredDebtPreviewDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.EntityNotFoundException;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.DebtAccount;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.IgnorableDebt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.utils.DebtComparatorUtil;
 import org.springframework.stereotype.Service;
 
@@ -27,10 +30,13 @@ import java.util.stream.Collectors;
 public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase, FindAllDebtsUseCase, LoadDebtList, DebtDuplicationPreventUseCase, SourceOfTruthImportUseCase {
     private final DebtRepository debtRepository;
     private final DebtAccountRepository debtAccountRepository;
+    private final IgnorableDebtRepository ignorableDebtRepository;
 
-    public DebtService(DebtRepository debtRepository, DebtAccountRepository debtAccountRepository) {
+    public DebtService(DebtRepository debtRepository, DebtAccountRepository debtAccountRepository,
+                       IgnorableDebtRepository ignorableDebtRepository) {
         this.debtRepository = debtRepository;
         this.debtAccountRepository = debtAccountRepository;
+        this.ignorableDebtRepository = ignorableDebtRepository;
     }
 
     @Override
@@ -44,10 +50,24 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
                 .filter(d -> d.getHashSum() != null)
                 .collect(Collectors.toMap(Debt::getHashSum, d -> d));
 
+        List<String> statementHashes = accountStatementDebts.stream()
+                .map(Debt::getHashSum)
+                .filter(Objects::nonNull)
+                .toList();
+
+        Map<String, String> ignorableByHash = this.ignorableDebtRepository.findByHashSumIn(statementHashes)
+                .stream()
+                .collect(Collectors.toMap(IgnorableDebt::getHashSum, IgnorableDebt::getReason));
+
         List<Debt> newDebts = new ArrayList<>();
         List<DebtInstallmentUpdateDto> installmentUpdates = new ArrayList<>();
+        List<IgnoredDebtPreviewDto> ignoredDebts = new ArrayList<>();
 
         for (Debt debt : DebtComparatorUtil.filterAccountStatementDebts(dbDebts, accountStatementDebts)) {
+            if (ignorableByHash.containsKey(debt.getHashSum())) {
+                ignoredDebts.add(new IgnoredDebtPreviewDto(debt, ignorableByHash.get(debt.getHashSum())));
+                continue;
+            }
             Debt dbMatch = dbByHash.get(debt.getHashSum());
             if (dbMatch != null) {
                 DebtInstallmentUpdateDto update = new DebtInstallmentUpdateDto();
@@ -69,7 +89,7 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
                 .filter(Objects::nonNull)
                 .toList();
 
-        return new AccountStatementPreviewDto(newDebts, installmentUpdates, completedDebts);
+        return new AccountStatementPreviewDto(newDebts, installmentUpdates, completedDebts, ignoredDebts);
     }
 
     @Override
@@ -114,7 +134,7 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
     }
 
     @Override
-    public List<Debt> saveUnrepeated(List<Debt> debts, String debtAccountCode) {
+    public List<Debt> saveUnrepeated(List<Debt> debts, String debtAccountCode, List<String> overrideIgnoredHashes) {
         DebtAccount debtAccount = this.debtAccountRepository.findDebtAccountByCodeAndActiveTrue(debtAccountCode)
                 .orElseThrow(() -> new EntityNotFoundException("Debt Account " + debtAccountCode));
 
@@ -127,6 +147,21 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
                 .filter(debt -> Objects.isNull(debt.getHashSum()))
                 .forEach(debt -> debt.setHashSum(this.getHashSum(debt, debtAccountCode)));
 
+        List<String> incomingHashes = debts.stream()
+                .map(Debt::getHashSum)
+                .filter(Objects::nonNull)
+                .toList();
+
+        Set<String> ignoredHashes = this.ignorableDebtRepository.findByHashSumIn(incomingHashes)
+                .stream()
+                .map(IgnorableDebt::getHashSum)
+                .filter(h -> overrideIgnoredHashes == null || !overrideIgnoredHashes.contains(h))
+                .collect(Collectors.toSet());
+
+        List<Debt> filteredDebts = debts.stream()
+                .filter(d -> !ignoredHashes.contains(d.getHashSum()))
+                .toList();
+
         Map<String, Debt> dbByHash = debtAccountDebts.stream()
                 .filter(d -> d.getHashSum() != null)
                 .collect(Collectors.toMap(Debt::getHashSum, d -> d));
@@ -134,7 +169,7 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
         List<Debt> toSave = new ArrayList<>();
         List<Debt> toUpdate = new ArrayList<>();
 
-        for (Debt debt : DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, debts)) {
+        for (Debt debt : DebtComparatorUtil.filterAccountStatementDebts(debtAccountDebts, filteredDebts)) {
             Debt dbMatch = dbByHash.get(debt.getHashSum());
             if (dbMatch != null) {
                 dbMatch.setCurrentInstallment(debt.getCurrentInstallment());
@@ -147,7 +182,7 @@ public class DebtService implements FilterDebtsUseCase, PayOffDebtAccountUseCase
         }
 
         // Deactivate DB debts whose statement entry reached max installment
-        List<Debt> toDeactivate = debts.stream()
+        List<Debt> toDeactivate = filteredDebts.stream()
                 .filter(d -> d.getCurrentInstallment() != null
                         && d.getMaxFinancingTerm() != null
                         && d.getCurrentInstallment().equals(d.getMaxFinancingTerm()))
