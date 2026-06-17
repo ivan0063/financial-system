@@ -5,6 +5,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FilterDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.FindAllDebtsUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.LoadDebtList;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.MarkDebtAsIgnorableUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.SourceOfTruthImportUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountStatementPreviewDto;
@@ -43,6 +44,7 @@ public class AccountStatementViewController {
     private final DebtMapper debtMapper;
     private final DebtAccountRepository debtAccountRepository;
     private final FindAllDebtsUseCase findAllDebtsUseCase;
+    private final MarkDebtAsIgnorableUseCase markDebtAsIgnorableUseCase;
     private final ActivityLogHelper activityLogHelper;
 
     public AccountStatementViewController(
@@ -54,6 +56,7 @@ public class AccountStatementViewController {
             DebtMapper debtMapper,
             DebtAccountRepository debtAccountRepository,
             FindAllDebtsUseCase findAllDebtsUseCase,
+            MarkDebtAsIgnorableUseCase markDebtAsIgnorableUseCase,
             ActivityLogHelper activityLogHelper) {
         this.extractFromFileUseCase = extractFromFileUseCase;
         this.filterDebtsUseCase = filterDebtsUseCase;
@@ -63,6 +66,7 @@ public class AccountStatementViewController {
         this.debtMapper = debtMapper;
         this.debtAccountRepository = debtAccountRepository;
         this.findAllDebtsUseCase = findAllDebtsUseCase;
+        this.markDebtAsIgnorableUseCase = markDebtAsIgnorableUseCase;
         this.activityLogHelper = activityLogHelper;
     }
 
@@ -118,10 +122,29 @@ public class AccountStatementViewController {
         model.addAttribute("newDebts", preview.newDebts());
         model.addAttribute("installmentUpdates", preview.installmentUpdates());
         model.addAttribute("completedDebts", preview.completedDebts());
+        model.addAttribute("ignoredDebts", preview.ignoredDebts());
         model.addAttribute("debtTypes", DebtTypeEnum.values());
         model.addAttribute("debtAccountCode", debtAccountCode);
         model.addAttribute("form", new DebtListForm());
         return "statements/preview";
+    }
+
+    @PostMapping("/{debtAccountCode}/mark-ignorable")
+    public String markIgnorable(@PathVariable String debtAccountCode,
+                                 @RequestParam String hashSum,
+                                 @RequestParam String reason,
+                                 HttpSession session) {
+        if (session.getAttribute("userEmail") == null) return "redirect:/ui";
+        markDebtAsIgnorableUseCase.markAsIgnorable(hashSum, reason);
+        // Re-compute preview so the debt moves from newDebts → ignoredDebts immediately
+        List<Debt> extracted = getExtractedDebts(session);
+        if (extracted != null) {
+            AccountStatementPreviewDto updated = filterDebtsUseCase.previewAccountStatement(extracted, debtAccountCode);
+            session.setAttribute("statementPreview", updated);
+        }
+        activityLogHelper.log(session, "Mark Ignorable — " + debtAccountCode,
+                Map.of("hashSum", hashSum, "reason", reason));
+        return "redirect:/ui/statements/" + debtAccountCode + "/preview";
     }
 
     /** Persist option A — save only new/selected debts (user-editable form). */

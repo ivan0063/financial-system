@@ -60,6 +60,10 @@
                 <i class="bi bi-x-circle me-1"></i>
                 <span th:text="${#lists.size(completedDebts)}">0</span> completed
             </span>
+            <span class="badge bg-secondary fs-6 px-3 py-2" th:if="${ignoredDebts != null and not #lists.isEmpty(ignoredDebts)}">
+                <i class="bi bi-eye-slash me-1"></i>
+                <span th:text="${#lists.size(ignoredDebts)}">0</span> ignored
+            </span>
         </div>
     </div>
 
@@ -106,6 +110,7 @@
                         <th class="text-end" style="min-width:100px">Monthly</th>
                         <th style="min-width:110px">Type</th>
                         <th style="min-width:200px">Installment</th>
+                        <th></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -129,6 +134,17 @@
                             </div>
                             <span th:unless="${debt.maxFinancingTerm != null and debt.maxFinancingTerm > 0}"
                                   class="text-muted small">&#8212;</span>
+                        </td>
+                        <td>
+                            <button th:if="${debt.hashSum != null}"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-secondary border-0 text-nowrap"
+                                    data-bs-toggle="modal" data-bs-target="#markIgnorableModal"
+                                    th:data-hash="${debt.hashSum}"
+                                    th:data-desc="${debt.description}"
+                                    title="Mark this debt as ignorable (borrowed card / relative's purchase)">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
                         </td>
                     </tr>
                     </tbody>
@@ -217,7 +233,14 @@
                                     th:selected="${dtype == debt.debtType}"></option>
                         </select>
                     </td>
-                    <td class="text-center">
+                    <td class="text-center text-nowrap">
+                        <button type="button" class="btn btn-sm btn-outline-secondary border-0"
+                                title="Mark as ignorable (borrowed card / relative)"
+                                data-bs-toggle="modal" data-bs-target="#markIgnorableModal"
+                                th:data-hash="${debt.hashSum}"
+                                th:data-desc="${debt.description}">
+                            <i class="bi bi-eye-slash"></i>
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-danger border-0"
                                 title="Exclude from save"
                                 th:attr="data-row=${iterStat.index}"
@@ -396,6 +419,44 @@
         </div>
     </div>
 
+    <!-- ── Ignored Debts ─────────────────────────────────────────────────────── -->
+    <div th:if="${ignoredDebts != null and not #lists.isEmpty(ignoredDebts)}">
+        <div class="section-divider">
+            <span><i class="bi bi-eye-slash me-1"></i>Ignored debts — skipped during extraction</span>
+        </div>
+        <div class="card shadow-sm mb-3 border-secondary">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle">
+                    <thead class="table-secondary">
+                    <tr>
+                        <th style="width:90px">Status</th>
+                        <th>Description</th>
+                        <th style="min-width:110px">Monthly</th>
+                        <th style="min-width:60px">Max</th>
+                        <th>Reason</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr class="text-muted" th:each="ig : ${ignoredDebts}">
+                        <td><span class="badge text-bg-secondary">IGNORED</span></td>
+                        <td class="small" th:text="${ig.debt.description}"></td>
+                        <td class="small font-monospace" th:text="${ig.debt.monthlyPayment ?: '—'}"></td>
+                        <td class="small" th:text="${ig.debt.maxFinancingTerm ?: '—'}"></td>
+                        <td class="small fst-italic" th:text="${ig.reason}"></td>
+                        <td>
+                            <a th:href="@{/ui/ignorable-debts}" class="btn btn-sm btn-outline-secondary border-0"
+                               title="Manage ignored debts">
+                                <i class="bi bi-gear"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- ── Action Bar ──────────────────────────────────────────────────────── -->
     <div class="d-flex justify-content-between align-items-center pb-5">
         <a th:href="@{/ui/debt-accounts/{code}(code=${debtAccountCode})}"
@@ -432,6 +493,37 @@
     </div>
 
 </div><!-- /container -->
+
+<!-- Mark as Ignorable Modal -->
+<div class="modal fade" id="markIgnorableModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form id="markIgnorableForm" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-eye-slash me-2 text-secondary"></i>Mark Debt as Ignorable</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">This debt will be skipped automatically on all future statement extractions for this account.</p>
+                <div class="mb-3">
+                    <label class="form-label">Debt</label>
+                    <input type="text" id="ignoreDesc" class="form-control" disabled>
+                </div>
+                <input type="hidden" name="hashSum" id="ignoreHashSum">
+                <div class="mb-0">
+                    <label class="form-label">Reason</label>
+                    <input type="text" name="reason" id="ignoreReason" class="form-control"
+                           placeholder="e.g. Borrowed by relative" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-secondary">
+                    <i class="bi bi-eye-slash me-1"></i>Mark as Ignorable
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- Source of Truth confirmation modal -->
 <div class="modal fade" id="confirmReplaceModal" tabindex="-1">
@@ -532,6 +624,17 @@ function removeDebtRow(btn) {
     btn.disabled = true;
 }
 
+// Mark-as-ignorable modal wiring
+var markIgnorableModal = document.getElementById('markIgnorableModal');
+if (markIgnorableModal) {
+    markIgnorableModal.addEventListener('show.bs.modal', function(event) {
+        var btn = event.relatedTarget;
+        document.getElementById('ignoreDesc').value = btn.getAttribute('data-desc') || '';
+        document.getElementById('ignoreHashSum').value = btn.getAttribute('data-hash') || '';
+        document.getElementById('ignoreReason').value = '';
+    });
+}
+
 // Collapse chevron icon toggle
 document.addEventListener('DOMContentLoaded', function() {
     var collapseEl = document.getElementById('currentDebtsCollapse');
@@ -553,6 +656,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var hasUpdates   = /*[[${not #lists.isEmpty(installmentUpdates)}]]*/ false;
     var hasCompleted = /*[[${not #lists.isEmpty(completedDebts)}]]*/ false;
     setMode((hasUpdates || hasCompleted) ? 'sync' : 'new');
+
+    // Set mark-ignorable form action using server-provided account code
+    var markForm = document.getElementById('markIgnorableForm');
+    if (markForm) {
+        markForm.action = /*[[@{/ui/statements/{c}/mark-ignorable(c=${debtAccountCode})}]]*/ '';
+    }
 })();
 </script>
 </body>
