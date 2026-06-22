@@ -19,4 +19,13 @@ public class DebtDiff implements Serializable {
     private Debt existingDebt;
 
     private DebtDiffStatus status;
+
+    /** Populated only when status is IGNORED — the reason stored in the ignorable-debt registry. */
+    private String ignoreReason;
+
+    public DebtDiff(Debt extractedDebt, Debt existingDebt, DebtDiffStatus status) {
+        this.extractedDebt = extractedDebt;
+        this.existingDebt = existingDebt;
+        this.status = status;
+    }
 }

@@ -11,7 +11,8 @@ public record StatementDiffResult(
         List<DebtDiff> newDebts,
         List<DebtDiff> updatedDebts,
         List<DebtDiff> completedDebts,
-        List<DebtDiff> unchangedDebts
+        List<DebtDiff> unchangedDebts,
+        List<DebtDiff> ignoredDebts
 ) implements Serializable {
 
     public boolean isEmpty() {
