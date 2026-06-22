@@ -4,5 +4,6 @@ public enum DebtDiffStatus {
     NEW,
     UPDATED,
     COMPLETED,
-    UNCHANGED
+    UNCHANGED,
+    IGNORED
 }

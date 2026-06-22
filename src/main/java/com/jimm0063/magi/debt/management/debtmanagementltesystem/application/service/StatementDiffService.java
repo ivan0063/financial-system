@@ -16,6 +16,8 @@ import java.util.stream.Collectors;
  * Pure diffing logic — no DB access, fully testable in isolation.
  * Compares a list of debts extracted from a statement against the debts
  * currently stored in the database and produces a categorised diff.
+ * Debts whose hash appears in ignorableHashReasons are classified as IGNORED
+ * and excluded from all other categories.
  */
 @Service
 public class StatementDiffService {
@@ -24,7 +26,8 @@ public class StatementDiffService {
             String debtAccountCode,
             AccountStatementType parserUsed,
             List<Debt> extractedDebts,
-            List<Debt> existingDebts) {
+            List<Debt> existingDebts,
+            Map<String, String> ignorableHashReasons) {
 
         Map<String, Debt> existingByHash = existingDebts.stream()
                 .filter(d -> d.getHashSum() != null)
@@ -34,9 +37,18 @@ public class StatementDiffService {
         List<DebtDiff> updatedDebts = new ArrayList<>();
         List<DebtDiff> completedDebts = new ArrayList<>();
         List<DebtDiff> unchangedDebts = new ArrayList<>();
+        List<DebtDiff> ignoredDebts = new ArrayList<>();
 
         for (Debt extracted : extractedDebts) {
-            Debt existing = existingByHash.get(extracted.getHashSum());
+            String hash = extracted.getHashSum();
+
+            if (hash != null && ignorableHashReasons.containsKey(hash)) {
+                ignoredDebts.add(new DebtDiff(extracted, existingByHash.get(hash),
+                        DebtDiffStatus.IGNORED, ignorableHashReasons.get(hash)));
+                continue;
+            }
+
+            Debt existing = existingByHash.get(hash);
             boolean isCompleted = isAtMaxTerm(extracted);
 
             if (existing == null) {
@@ -56,7 +68,7 @@ public class StatementDiffService {
         }
 
         return new StatementDiffResult(debtAccountCode, parserUsed,
-                newDebts, updatedDebts, completedDebts, unchangedDebts);
+                newDebts, updatedDebts, completedDebts, unchangedDebts, ignoredDebts);
     }
 
     private boolean isAtMaxTerm(Debt debt) {
