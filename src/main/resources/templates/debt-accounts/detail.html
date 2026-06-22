@@ -55,8 +55,11 @@
 
     <!-- Actions -->
     <div class="d-flex gap-2 mb-4 flex-wrap">
-        <a th:href="@{/ui/statements/{code}(code=${debtAccountCode})}" class="btn btn-primary">
-            <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload Statement
+        <a th:href="@{/ui/v2/statements/{code}(code=${debtAccountCode})}" class="btn btn-primary">
+            <i class="bi bi-file-earmark-arrow-up me-2"></i>Import Statement
+        </a>
+        <a th:href="@{/ui/statements/{code}(code=${debtAccountCode})}" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-arrow-up me-2"></i>Upload Statement (legacy)
         </a>
         <form th:action="@{/ui/debts/{code}/pay-off(code=${debtAccountCode})}" method="post">
             <button type="submit" class="btn btn-success"
