@@ -25,9 +25,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -86,7 +88,8 @@ public class AccountStatementViewController {
             @PathVariable String debtAccountCode,
             @RequestParam("file") MultipartFile file,
             @RequestParam AccountStatementType accountStatementType,
-            HttpSession session) {
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         try {
             List<Debt> debts = extractFromFileUseCase.extractDebts(file, debtAccountCode, accountStatementType)
@@ -106,11 +109,29 @@ public class AccountStatementViewController {
             session.setAttribute("statementPreview", preview);
             activityLogHelper.log(session, "Extract — " + debtAccountCode, preview);
             return "redirect:/ui/statements/" + debtAccountCode + "/preview";
-        } catch (IOException e) {
-            return "redirect:/ui/statements/" + debtAccountCode + "?error=parse_failed";
-        } catch (IllegalArgumentException e) {
-            return "redirect:/ui/statements/" + debtAccountCode + "?error=missing_fields";
+        } catch (Exception e) {
+            logExtractionError(session, debtAccountCode, e);
+            redirectAttributes.addFlashAttribute("extractionError", buildUserMessage(e));
+            return "redirect:/ui/statements/" + debtAccountCode;
         }
+    }
+
+    private void logExtractionError(HttpSession session, String debtAccountCode, Exception e) {
+        Map<String, String> errorInfo = new LinkedHashMap<>();
+        errorInfo.put("exception", e.getClass().getName());
+        errorInfo.put("message", e.getMessage());
+        if (e.getCause() != null) {
+            errorInfo.put("cause", e.getCause().getClass().getName() + ": " + e.getCause().getMessage());
+        }
+        activityLogHelper.log(session, "Extract ERROR — " + debtAccountCode, errorInfo);
+    }
+
+    private static String buildUserMessage(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+        if (e.getCause() != null && e.getCause().getMessage() != null) {
+            msg += " → " + e.getCause().getMessage();
+        }
+        return msg;
     }
 
     @GetMapping("/{debtAccountCode}/preview")
