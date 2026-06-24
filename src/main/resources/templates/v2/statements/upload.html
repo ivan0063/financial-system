@@ -32,14 +32,16 @@
     </div>
 
     <!-- Error alert -->
-    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3"
-         th:if="${param.error != null}">
-        <i class="bi bi-exclamation-triangle-fill"></i>
-        <span th:switch="${param.error[0]}">
-            <span th:case="'parse_failed'">Could not parse the statement file. Verify the file is correct and try again.</span>
-            <span th:case="'missing_fields'">One or more required fields (monthly payment, max term) were missing in the extracted data.</span>
-            <span th:case="*">An unexpected error occurred. Please try again.</span>
-        </span>
+    <div class="alert alert-danger mb-3" th:if="${extractionError != null}">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <strong>Extraction failed</strong>
+        </div>
+        <div class="font-monospace small p-2 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25"
+             th:text="${extractionError}" style="word-break: break-word; white-space: pre-wrap;"></div>
+        <div class="mt-2 small text-muted">
+            <i class="bi bi-terminal me-1"></i>Open the <strong>Activity Log</strong> (top-right) for the full exception details.
+        </div>
     </div>
 
     <div class="row justify-content-center">

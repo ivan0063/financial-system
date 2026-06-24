@@ -16,9 +16,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/ui/v2/statements")
@@ -64,7 +66,8 @@ public class StatementDiffViewController {
     public String extract(
             @PathVariable String debtAccountCode,
             @RequestParam("file") MultipartFile file,
-            HttpSession session) {
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         try {
             StatementDiffResult diff = previewUseCase.preview(file, debtAccountCode);
@@ -73,10 +76,10 @@ public class StatementDiffViewController {
             session.setAttribute(DEBTS_KEY, allExtracted);
             activityLogHelper.log(session, "Statement diff preview — " + debtAccountCode, diff);
             return "redirect:/ui/v2/statements/" + debtAccountCode + "/preview";
-        } catch (IOException e) {
-            return "redirect:/ui/v2/statements/" + debtAccountCode + "?error=parse_failed";
-        } catch (IllegalArgumentException e) {
-            return "redirect:/ui/v2/statements/" + debtAccountCode + "?error=missing_fields";
+        } catch (Exception e) {
+            logError(session, "Extract ERROR — " + debtAccountCode, e);
+            redirectAttributes.addFlashAttribute("extractionError", buildUserMessage(e));
+            return "redirect:/ui/v2/statements/" + debtAccountCode;
         }
     }
 
@@ -124,7 +127,8 @@ public class StatementDiffViewController {
     public String sync(
             @PathVariable String debtAccountCode,
             @RequestParam SyncMode mode,
-            HttpSession session) {
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         Object attr = session.getAttribute(DIFF_KEY);
         if (!(attr instanceof StatementDiffResult diff))
@@ -135,7 +139,9 @@ public class StatementDiffViewController {
             clearSession(session);
             return "redirect:/ui/debt-accounts/" + debtAccountCode;
         } catch (Exception e) {
-            return "redirect:/ui/v2/statements/" + debtAccountCode + "/preview?error=sync_failed";
+            logError(session, "Sync ERROR [" + mode + "] — " + debtAccountCode, e);
+            redirectAttributes.addFlashAttribute("syncError", buildUserMessage(e));
+            return "redirect:/ui/v2/statements/" + debtAccountCode + "/preview";
         }
     }
 
@@ -163,5 +169,23 @@ public class StatementDiffViewController {
     private void clearSession(HttpSession session) {
         session.removeAttribute(DIFF_KEY);
         session.removeAttribute(DEBTS_KEY);
+    }
+
+    private void logError(HttpSession session, String action, Exception e) {
+        Map<String, String> info = new LinkedHashMap<>();
+        info.put("exception", e.getClass().getName());
+        info.put("message", e.getMessage());
+        if (e.getCause() != null) {
+            info.put("cause", e.getCause().getClass().getName() + ": " + e.getCause().getMessage());
+        }
+        activityLogHelper.log(session, action, info);
+    }
+
+    private static String buildUserMessage(Exception e) {
+        String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+        if (e.getCause() != null && e.getCause().getMessage() != null) {
+            msg += " → " + e.getCause().getMessage();
+        }
+        return msg;
     }
 }

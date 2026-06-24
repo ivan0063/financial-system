@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/ui/payments")
@@ -39,14 +41,26 @@ public class PaymentViewController {
     }
 
     @PostMapping("/{debtAccountCode}")
-    public String doPaymentAction(@PathVariable String debtAccountCode, HttpSession session) {
+    public String doPaymentAction(@PathVariable String debtAccountCode,
+                                  HttpSession session,
+                                  RedirectAttributes redirectAttributes) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         try {
             var payment = doPayment.cardPayment(debtAccountCode);
             activityLogHelper.log(session, "Process Payment — " + debtAccountCode, payment);
             return "redirect:/ui/payments/" + debtAccountCode;
-        } catch (IOException e) {
-            return "redirect:/ui/payments/" + debtAccountCode + "?error=payment_failed";
+        } catch (Exception e) {
+            Map<String, String> info = new LinkedHashMap<>();
+            info.put("exception", e.getClass().getName());
+            info.put("message", e.getMessage());
+            if (e.getCause() != null) {
+                info.put("cause", e.getCause().getClass().getName() + ": " + e.getCause().getMessage());
+            }
+            activityLogHelper.log(session, "Payment ERROR — " + debtAccountCode, info);
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            if (e.getCause() != null && e.getCause().getMessage() != null) msg += " → " + e.getCause().getMessage();
+            redirectAttributes.addFlashAttribute("paymentError", msg);
+            return "redirect:/ui/payments/" + debtAccountCode;
         }
     }
 }
