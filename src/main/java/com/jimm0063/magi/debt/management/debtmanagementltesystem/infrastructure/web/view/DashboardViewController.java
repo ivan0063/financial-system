@@ -3,6 +3,7 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.GetFinancialStatusUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.UserRepository;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,9 @@ public class DashboardViewController {
     private final UserRepository userRepository;
     private final ActivityLogHelper activityLogHelper;
 
+    @Value("${app.default-user-email:}")
+    private String defaultUserEmail;
+
     public DashboardViewController(GetFinancialStatusUseCase getFinancialStatusUseCase,
                                    UserRepository userRepository,
                                    ActivityLogHelper activityLogHelper) {
@@ -29,6 +33,9 @@ public class DashboardViewController {
 
     @GetMapping
     public String home(HttpSession session) {
+        if (session.getAttribute("userEmail") == null && defaultUserEmail != null && !defaultUserEmail.isBlank()) {
+            session.setAttribute("userEmail", defaultUserEmail);
+        }
         if (session.getAttribute("userEmail") != null) {
             return "redirect:/ui/dashboard";
         }
