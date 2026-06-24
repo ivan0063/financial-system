@@ -186,8 +186,7 @@ public class PalacioAccountStatementService implements AccountStatementDataExtra
 
         d.setMonthlyPayment((r.getMonthlyPayment()));
 
-        // Not available in this section
-        d.setOriginalAmount(new BigDecimal(0));
+        d.setOriginalAmount(null); // computed downstream as monthlyPayment × maxFinancingTerm
 
         // Optional: you might want to store saldo pendiente somewhere else; your v1 Debt doesn't have it.
         // If you added a field later, set it here.
