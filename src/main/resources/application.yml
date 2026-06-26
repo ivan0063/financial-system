@@ -26,3 +26,6 @@ spring:
       max-request-size: 50MB
 server:
   port: 666
+
+app:
+  default-user-email: ${APP_DEFAULT_USER_EMAIL:jimm0063@icloud.com}
