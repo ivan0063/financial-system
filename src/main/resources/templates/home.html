@@ -16,6 +16,15 @@
                 <h3 class="mt-2 fw-bold">Financial Manager</h3>
                 <p class="text-muted small">Enter your email to access your financial dashboard</p>
             </div>
+            <div class="alert alert-warning d-flex align-items-start gap-2 mb-3"
+                 th:if="${param.error != null and param.error[0] == 'email_not_found'}">
+                <i class="bi bi-exclamation-triangle-fill mt-1 flex-shrink-0"></i>
+                <div>
+                    <strong>Email not recognized.</strong>
+                    The configured email was not found in the system.
+                    Enter a different email below — it will be used for this session only.
+                </div>
+            </div>
             <form th:action="@{/ui/session}" method="post">
                 <div class="mb-3">
                     <label for="email" class="form-label fw-semibold">Email address</label>

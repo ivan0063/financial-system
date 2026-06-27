@@ -2,6 +2,7 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.infrastructure
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.GetFinancialStatusUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.UserRepository;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.EntityNotFoundException;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.Map;
 
 @Controller
 @RequestMapping("/ui")
@@ -52,9 +55,16 @@ public class DashboardViewController {
     public String dashboard(HttpSession session, Model model) {
         String email = (String) session.getAttribute("userEmail");
         if (email == null) return "redirect:/ui";
-        model.addAttribute("dashboard", getFinancialStatusUseCase.getUserStatus(email));
-        model.addAttribute("email", email);
-        return "dashboard/index";
+        try {
+            model.addAttribute("dashboard", getFinancialStatusUseCase.getUserStatus(email));
+            model.addAttribute("email", email);
+            return "dashboard/index";
+        } catch (EntityNotFoundException e) {
+            activityLogHelper.log(session, "Login ERROR",
+                    Map.of("reason", "email not found", "email", email));
+            session.removeAttribute("userEmail");
+            return "redirect:/ui?error=email_not_found";
+        }
     }
 
     @PutMapping("/financials")

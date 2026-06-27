@@ -34,16 +34,32 @@
 
                     <div class="mb-3" th:if="${errorMessage != null}">
                         <label class="form-label fw-semibold small text-muted text-uppercase">Message</label>
-                        <div class="font-monospace small p-2 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded"
-                             th:text="${errorMessage}"
-                             style="word-break: break-word; white-space: pre-wrap;"></div>
+                        <div class="position-relative">
+                            <div class="font-monospace small p-2 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded copy-source"
+                                 th:text="${errorMessage}"
+                                 style="word-break: break-word; white-space: pre-wrap; padding-right: 2.5rem !important;"></div>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-1"
+                                    title="Copy to clipboard"
+                                    onclick="copyEl(this, this.previousElementSibling)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-4" th:if="${errorCause != null}">
                         <label class="form-label fw-semibold small text-muted text-uppercase">Caused by</label>
-                        <div class="font-monospace small p-2 bg-light border rounded"
-                             th:text="${errorCause}"
-                             style="word-break: break-word; white-space: pre-wrap;"></div>
+                        <div class="position-relative">
+                            <div class="font-monospace small p-2 bg-light border rounded copy-source"
+                                 th:text="${errorCause}"
+                                 style="word-break: break-word; white-space: pre-wrap; padding-right: 2.5rem !important;"></div>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-1"
+                                    title="Copy to clipboard"
+                                    onclick="copyEl(this, this.previousElementSibling)">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="d-flex gap-2">

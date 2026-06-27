@@ -83,7 +83,13 @@
                 </h2>
                 <div th:id="${'entry' + iterStat.index}" class="accordion-collapse collapse"
                      th:classappend="${iterStat.index == 0 ? ' show' : ''}">
-                    <div class="accordion-body p-0">
+                    <div class="accordion-body p-0 position-relative log-body">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-1"
+                                title="Copy to clipboard"
+                                onclick="copyEl(this, this.closest('.log-body').querySelector('pre'))">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
                         <pre class="mb-0 p-3 bg-dark text-light" style="font-size: 0.75rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;"
                              th:text="${entry.jsonResponse()}"></pre>
                     </div>
@@ -93,5 +99,16 @@
     </div>
 </div>
 </div>
+<script>
+function copyEl(btn, el) {
+    if (!el) return;
+    navigator.clipboard.writeText(el.textContent).then(() => {
+        const icon = btn.querySelector('i');
+        icon.className = 'bi bi-clipboard-check';
+        btn.title = 'Copied!';
+        setTimeout(() => { icon.className = 'bi bi-clipboard'; btn.title = 'Copy to clipboard'; }, 2000);
+    });
+}
+</script>
 </body>
 </html>
