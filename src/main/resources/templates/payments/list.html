@@ -28,8 +28,17 @@
             <i class="bi bi-exclamation-triangle-fill fs-5"></i>
             <strong>Payment failed</strong>
         </div>
-        <div class="font-monospace small p-2 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25"
-             th:text="${paymentError}" style="word-break: break-word; white-space: pre-wrap;"></div>
+        <div class="position-relative">
+            <div class="font-monospace small p-2 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25"
+                 th:text="${paymentError}"
+                 style="word-break: break-word; white-space: pre-wrap; padding-right: 2.5rem !important;"></div>
+            <button type="button"
+                    class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-1"
+                    title="Copy to clipboard"
+                    onclick="copyEl(this, this.previousElementSibling)">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
         <div class="mt-2 small text-muted">
             <i class="bi bi-terminal me-1"></i>Open the <strong>Activity Log</strong> (top-right) for the full exception details.
         </div>
