@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 
@@ -132,7 +133,21 @@ public class DebtAccountViewController {
         model.addAttribute("status", debtAccountStatusUseCase.getStatus(code));
         model.addAttribute("debtAccountCode", code);
         model.addAttribute("debtTypes", DebtTypeEnum.values());
+        model.addAttribute("statementTypes", AccountStatementType.values());
         model.addAttribute("email", email);
         return "debt-accounts/detail";
+    }
+
+    @PostMapping("/{code}/statement-type")
+    public String changeStatementType(@PathVariable String code,
+                                      @RequestParam AccountStatementType accountStatementType,
+                                      HttpSession session,
+                                      RedirectAttributes ra) {
+        if (session.getAttribute("userEmail") == null) return "redirect:/ui";
+        var updated = debtAccountRepository.updateStatementType(code, accountStatementType);
+        activityLogHelper.log(session, "Change Statement Type",
+                Map.of("code", code, "newType", accountStatementType.toString()));
+        ra.addFlashAttribute("successMessage", "Statement type updated to " + accountStatementType);
+        return "redirect:/ui/debt-accounts/" + code;
     }
 }
