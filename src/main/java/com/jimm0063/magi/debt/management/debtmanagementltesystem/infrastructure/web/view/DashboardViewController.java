@@ -35,8 +35,13 @@ public class DashboardViewController {
     }
 
     @GetMapping
-    public String home(HttpSession session) {
-        if (session.getAttribute("userEmail") == null && defaultUserEmail != null && !defaultUserEmail.isBlank()) {
+    public String home(HttpSession session,
+                       @RequestParam(required = false) String error) {
+        boolean emailNotFound = "email_not_found".equals(error);
+        if (!emailNotFound
+                && session.getAttribute("userEmail") == null
+                && defaultUserEmail != null
+                && !defaultUserEmail.isBlank()) {
             session.setAttribute("userEmail", defaultUserEmail);
         }
         if (session.getAttribute("userEmail") != null) {
