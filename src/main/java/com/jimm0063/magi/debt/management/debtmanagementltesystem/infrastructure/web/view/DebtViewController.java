@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.util.UriUtils;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @Controller
@@ -44,7 +46,7 @@ public class DebtViewController {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         var saved = debtRepository.save(debtMapper.toModel(req), debtAccountCode);
         activityLogHelper.log(session, "Create Debt", saved);
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
     }
 
     @DeleteMapping("/{debtId}")
@@ -53,7 +55,7 @@ public class DebtViewController {
                              HttpSession session) {
         debtRepository.delete(debtId);
         activityLogHelper.log(session, "Delete Debt", Map.of("deleted", true, "id", debtId));
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
     }
 
     @PostMapping("/{debtId}/update")
@@ -81,7 +83,7 @@ public class DebtViewController {
         debt.setActive(true);
         var updated = debtRepository.update(debt);
         activityLogHelper.log(session, "Update Debt — " + debtId, updated);
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
     }
 
     @PostMapping("/{debtAccountCode}/pay-off")
@@ -89,6 +91,10 @@ public class DebtViewController {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         var paid = payOffDebtAccountUseCase.payOffByDebtAccountCode(debtAccountCode);
         activityLogHelper.log(session, "Pay Off — " + debtAccountCode, paid);
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
+    }
+
+    private static String enc(String segment) {
+        return UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8);
     }
 }

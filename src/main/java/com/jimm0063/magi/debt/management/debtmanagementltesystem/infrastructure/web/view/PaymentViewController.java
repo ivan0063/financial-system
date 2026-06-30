@@ -10,7 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -48,7 +50,7 @@ public class PaymentViewController {
         try {
             var payment = doPayment.cardPayment(debtAccountCode);
             activityLogHelper.log(session, "Process Payment — " + debtAccountCode, payment);
-            return "redirect:/ui/payments/" + debtAccountCode;
+            return "redirect:/ui/payments/" + enc(debtAccountCode);
         } catch (Exception e) {
             Map<String, String> info = new LinkedHashMap<>();
             info.put("exception", e.getClass().getName());
@@ -60,7 +62,11 @@ public class PaymentViewController {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             if (e.getCause() != null && e.getCause().getMessage() != null) msg += " → " + e.getCause().getMessage();
             redirectAttributes.addFlashAttribute("paymentError", msg);
-            return "redirect:/ui/payments/" + debtAccountCode;
+            return "redirect:/ui/payments/" + enc(debtAccountCode);
         }
+    }
+
+    private static String enc(String segment) {
+        return UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8);
     }
 }
