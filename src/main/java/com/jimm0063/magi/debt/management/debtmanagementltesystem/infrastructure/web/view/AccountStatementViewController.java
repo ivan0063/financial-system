@@ -26,8 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -108,11 +110,11 @@ public class AccountStatementViewController {
             session.setAttribute("extractedDebts", debts);
             session.setAttribute("statementPreview", preview);
             activityLogHelper.log(session, "Extract — " + debtAccountCode, preview);
-            return "redirect:/ui/statements/" + debtAccountCode + "/preview";
+            return "redirect:/ui/statements/" + enc(debtAccountCode) + "/preview";
         } catch (Exception e) {
             logExtractionError(session, debtAccountCode, e);
             redirectAttributes.addFlashAttribute("extractionError", buildUserMessage(e));
-            return "redirect:/ui/statements/" + debtAccountCode;
+            return "redirect:/ui/statements/" + enc(debtAccountCode);
         }
     }
 
@@ -138,7 +140,7 @@ public class AccountStatementViewController {
     public String preview(@PathVariable String debtAccountCode, HttpSession session, Model model) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         if (!(session.getAttribute("statementPreview") instanceof AccountStatementPreviewDto preview))
-            return "redirect:/ui/statements/" + debtAccountCode;
+            return "redirect:/ui/statements/" + enc(debtAccountCode);
         model.addAttribute("currentDebts", findAllDebtsUseCase.getActiveByDebtAccount(debtAccountCode));
         model.addAttribute("newDebts", preview.newDebts());
         model.addAttribute("installmentUpdates", preview.installmentUpdates());
@@ -189,7 +191,7 @@ public class AccountStatementViewController {
         List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
         activityLogHelper.log(session, "Add debts — " + debtAccountCode, saved);
         clearSession(session);
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
     }
 
     /** Persist option B — deactivate obsolete debts then save/update from extracted list. */
@@ -205,7 +207,7 @@ public class AccountStatementViewController {
         List<Debt> saved = loadDebtList.saveUnrepeated(debts, debtAccountCode);
         activityLogHelper.log(session, "Full Sync — " + debtAccountCode, saved);
         clearSession(session);
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
     }
 
     /** Persist option C — wipe all existing debts and import statement as source of truth. */
@@ -220,7 +222,7 @@ public class AccountStatementViewController {
         List<Debt> saved = sourceOfTruthImportUseCase.replaceAllWithStatement(debts, debtAccountCode);
         activityLogHelper.log(session, "Source of Truth Replace — " + debtAccountCode, saved);
         clearSession(session);
-        return "redirect:/ui/debt-accounts/" + debtAccountCode;
+        return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
     }
 
     @SuppressWarnings("unchecked")
@@ -246,5 +248,9 @@ public class AccountStatementViewController {
     private void clearSession(HttpSession session) {
         session.removeAttribute("extractedDebts");
         session.removeAttribute("statementPreview");
+    }
+
+    private static String enc(String segment) {
+        return UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8);
     }
 }

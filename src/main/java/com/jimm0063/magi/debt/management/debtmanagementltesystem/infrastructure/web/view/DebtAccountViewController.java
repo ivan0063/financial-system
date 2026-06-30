@@ -22,6 +22,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriUtils;
+
+import java.nio.charset.StandardCharsets;
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 
@@ -76,7 +79,7 @@ public class DebtAccountViewController {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         var saved = debtAccountRepository.save(debtAccountMapper.toModel(req), providerCode);
         activityLogHelper.log(session, "Create Debt Account", saved);
-        return "redirect:/ui/debt-accounts?providerCode=" + providerCode;
+        return "redirect:/ui/debt-accounts?providerCode=" + enc(providerCode);
     }
 
     @DeleteMapping("/{code}")
@@ -86,7 +89,7 @@ public class DebtAccountViewController {
         debtAccountRepository.delete(code);
         activityLogHelper.log(session, "Delete Debt Account", Map.of("deleted", true, "code", code));
         return providerCode != null
-                ? "redirect:/ui/debt-accounts?providerCode=" + providerCode
+                ? "redirect:/ui/debt-accounts?providerCode=" + enc(providerCode)
                 : "redirect:/ui/dashboard";
     }
 
@@ -148,6 +151,10 @@ public class DebtAccountViewController {
         activityLogHelper.log(session, "Change Statement Type",
                 Map.of("code", code, "newType", accountStatementType.toString()));
         ra.addFlashAttribute("successMessage", "Statement type updated to " + accountStatementType);
-        return "redirect:/ui/debt-accounts/" + code;
+        return "redirect:/ui/debt-accounts/" + enc(code);
+    }
+
+    private static String enc(String segment) {
+        return UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8);
     }
 }

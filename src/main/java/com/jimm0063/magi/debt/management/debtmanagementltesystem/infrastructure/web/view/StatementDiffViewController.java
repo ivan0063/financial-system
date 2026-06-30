@@ -17,7 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,11 +77,11 @@ public class StatementDiffViewController {
             session.setAttribute(DIFF_KEY, diff);
             session.setAttribute(DEBTS_KEY, allExtracted);
             activityLogHelper.log(session, "Statement diff preview — " + debtAccountCode, diff);
-            return "redirect:/ui/v2/statements/" + debtAccountCode + "/preview";
+            return "redirect:/ui/v2/statements/" + enc(debtAccountCode) + "/preview";
         } catch (Exception e) {
             logError(session, "Extract ERROR — " + debtAccountCode, e);
             redirectAttributes.addFlashAttribute("extractionError", buildUserMessage(e));
-            return "redirect:/ui/v2/statements/" + debtAccountCode;
+            return "redirect:/ui/v2/statements/" + enc(debtAccountCode);
         }
     }
 
@@ -92,7 +94,7 @@ public class StatementDiffViewController {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         Object attr = session.getAttribute(DIFF_KEY);
         if (!(attr instanceof StatementDiffResult diff))
-            return "redirect:/ui/v2/statements/" + debtAccountCode;
+            return "redirect:/ui/v2/statements/" + enc(debtAccountCode);
         model.addAttribute("diff", diff);
         model.addAttribute("debtAccountCode", debtAccountCode);
         return "v2/statements/preview";
@@ -119,7 +121,7 @@ public class StatementDiffViewController {
             activityLogHelper.log(session, "Mark ignorable — " + debtAccountCode,
                     "hash=" + hashSum + ", reason=" + reason);
         }
-        return "redirect:/ui/v2/statements/" + debtAccountCode + "/preview";
+        return "redirect:/ui/v2/statements/" + enc(debtAccountCode) + "/preview";
     }
 
     /** Step 3 — apply the chosen sync mode and redirect to the account detail page. */
@@ -132,16 +134,16 @@ public class StatementDiffViewController {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         Object attr = session.getAttribute(DIFF_KEY);
         if (!(attr instanceof StatementDiffResult diff))
-            return "redirect:/ui/v2/statements/" + debtAccountCode;
+            return "redirect:/ui/v2/statements/" + enc(debtAccountCode);
         try {
             syncUseCase.sync(diff, mode);
             activityLogHelper.log(session, "Statement sync [" + mode + "] — " + debtAccountCode, diff);
             clearSession(session);
-            return "redirect:/ui/debt-accounts/" + debtAccountCode;
+            return "redirect:/ui/debt-accounts/" + enc(debtAccountCode);
         } catch (Exception e) {
             logError(session, "Sync ERROR [" + mode + "] — " + debtAccountCode, e);
             redirectAttributes.addFlashAttribute("syncError", buildUserMessage(e));
-            return "redirect:/ui/v2/statements/" + debtAccountCode + "/preview";
+            return "redirect:/ui/v2/statements/" + enc(debtAccountCode) + "/preview";
         }
     }
 
@@ -187,5 +189,9 @@ public class StatementDiffViewController {
             msg += " → " + e.getCause().getMessage();
         }
         return msg;
+    }
+
+    private static String enc(String segment) {
+        return UriUtils.encodePathSegment(segment, StandardCharsets.UTF_8);
     }
 }
