@@ -37,4 +37,9 @@ public class UserStatusDashboard {
     // Salary & savings insights
     private Double savingsRunwayMonths;
     private Double disposableIncomeRate;
+
+    // Receivable insights (money lent out, e.g. to relatives)
+    private Double totalPendingReceivables;
+    private Integer activeReceivableCount;
+    private List<ReceivableStatusDto> userReceivables;
 }
