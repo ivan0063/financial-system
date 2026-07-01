@@ -62,8 +62,8 @@ src/main/java/com/jimm0063/magi/debt/management/debtmanagementltesystem/
 ├── domain/
 │   ├── model/              # Debt, DebtAccount, DebtSysUser, FinancialProvider,
 │   │                       # FinancialProviderCatalog, FixedExpense, FixedExpenseCatalog,
-│   │                       # Payment, StatementExtractionResult, PalacioMsiRowModel
-│   ├── dto/                # DebtAccountStatusDto, UserStatusDashboard, AccountStatementPreviewDto, ...
+│   │                       # Payment, Receivable, ReceivablePayment, StatementExtractionResult, PalacioMsiRowModel
+│   ├── dto/                # DebtAccountStatusDto, UserStatusDashboard, AccountStatementPreviewDto, ReceivableStatusDto, ...
 │   ├── enums/              # DebtTypeEnum, AccountStatementType
 │   ├── exceptions/         # EntityNotFoundException, NoDebtsException
 │   ├── utils/              # DebtComparatorUtil, hash utilities
@@ -205,6 +205,20 @@ DELETE /fixed/expense/{id}                   Delete expense
 GET    /fixed/expense/all/{email}            List user's expenses
 ```
 
+### Receivables (money lent out, e.g. to relatives)
+```
+POST   /receivable/{userEmail}               Create receivable (record money lent)
+PUT    /receivable                           Update receivable
+DELETE /receivable/{receivableId}            Soft-delete receivable
+GET    /receivable/all/{userEmail}           List user's receivables
+POST   /receivable/{receivableId}/payment    Register a repayment (irregular/partial amounts allowed)
+GET    /receivable/status/{receivableId}     Pending balance + repayment history for one receivable
+GET    /receivable/status/all/{userEmail}    Pending balance + repayment history for all receivables
+```
+A `Receivable` auto-closes (`active=false`) once accumulated repayments cover the principal, and
+re-opens automatically if repayments are ever removed/adjusted below the principal. Repayments are
+dynamic amounts (no fixed installment schedule) — a single payment can cover several months at once.
+
 ### Spring Data REST (HAL-JSON)
 ```
 /jpa/*   Auto-generated CRUD for all JPA entities (HAL format with _embedded collections)
@@ -221,6 +235,7 @@ GET    /ui/debt-progression  Charts and progression tracking
 GET    /ui/statements        Statement upload interface
 GET    /ui/payments          Payment history
 GET    /ui/providers         Provider management
+GET    /ui/receivables       Money lent out (e.g. to relatives) + repayment tracking
 ```
 
 ### API Documentation
@@ -241,7 +256,9 @@ debt_sys_user (PK: email)
 │         └── 1:N → debt_account
 │                   ├── 1:N → debt
 │                   └── 1:N → payment
-└── 1:N → fixed_expense
+├── 1:N → fixed_expense
+└── 1:N → receivable
+          └── 1:N → receivable_payment
 
 financial_provider_catalog  ← M:1 from financial_provider
 fixed_expense_catalog       ← M:1 from fixed_expense
@@ -331,6 +348,7 @@ fixedExpenses          = sum of active fixed expense costs
 availableIncome        = salary - totalMonthlyPayments - fixedExpenses
 breakdownByType        = CARD / LOAN / PEOPLE / FOR_LIFE_PLAN sums
 breakdownByAccount     = per-account payment distribution
+totalPendingReceivables = sum of pending balances across active receivables (money lent out, not yet repaid)
 ```
 
 ---
@@ -394,6 +412,7 @@ The Tesseract installation in Docker is required for `LIVERPOOL` statement parsi
 | `application/service/DebtService.java` | Core debt operations + deduplication |
 | `application/service/FinancialStatusService.java` | Dashboard aggregation |
 | `application/service/PaymentService.java` | Payment recording + installment increment |
+| `application/service/ReceivableService.java` | Money lent out: pending-balance calculation, auto open/close on repayment |
 | `infrastructure/web/AccountStatementController.java` | Statement extraction endpoints |
 | `domain/utils/DebtComparatorUtil.java` | Diff logic: new vs. existing debts |
 | `domain/enums/AccountStatementType.java` | Provider type enum (drives factory selection) |

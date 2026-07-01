@@ -1,10 +1,12 @@
 package com.jimm0063.magi.debt.management.debtmanagementltesystem.application.service;
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.GetFinancialStatusUseCase;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.GetReceivableStatusUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.*;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AccountSummaryDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.AlmostCompletedDebtsDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.CategoryAmountDto;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.ReceivableStatusDto;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.dto.UserStatusDashboard;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.EntityNotFoundException;
@@ -29,15 +31,17 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
     private final DebtAccountRepository debtAccountRepository;
     private final DebtRepository debtRepository;
     private final FixedExpenseRepository fixedExpenseRepository;
+    private final GetReceivableStatusUseCase getReceivableStatusUseCase;
 
     public FinancialStatusService(UserRepository userRepository, FinancialProviderRepository financialProviderRepository,
                                   DebtAccountRepository debtAccountRepository, DebtRepository debtRepository,
-                                  FixedExpenseRepository fixedExpenseRepository) {
+                                  FixedExpenseRepository fixedExpenseRepository, GetReceivableStatusUseCase getReceivableStatusUseCase) {
         this.userRepository = userRepository;
         this.financialProviderRepository = financialProviderRepository;
         this.debtAccountRepository = debtAccountRepository;
         this.debtRepository = debtRepository;
         this.fixedExpenseRepository = fixedExpenseRepository;
+        this.getReceivableStatusUseCase = getReceivableStatusUseCase;
     }
 
     @Override
@@ -215,6 +219,15 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
                 .filter(d -> d.getMonthlyPayment() != null)
                 .mapToDouble(d -> d.getMonthlyPayment().doubleValue()).sum();
 
+        // Money lent out to others (e.g. relatives) that is still pending repayment
+        List<ReceivableStatusDto> userReceivables = getReceivableStatusUseCase.getAllStatusesByEmail(email);
+        List<ReceivableStatusDto> activeReceivables = userReceivables.stream()
+                .filter(dto -> Boolean.TRUE.equals(dto.getReceivable().getActive()))
+                .toList();
+        double totalPendingReceivables = activeReceivables.stream()
+                .mapToDouble(dto -> dto.getPendingAmount().doubleValue())
+                .sum();
+
         UserStatusDashboard response = new UserStatusDashboard();
         response.setSalary(user.getSalary());
         response.setSavings(user.getSavings());
@@ -241,6 +254,10 @@ public class FinancialStatusService implements GetFinancialStatusUseCase {
         response.setFixedExpenseCount(userFixedExpenses.size());
         response.setSavingsRunwayMonths(savingsRunwayMonths);
         response.setDisposableIncomeRate(disposableIncomeRate);
+
+        response.setUserReceivables(userReceivables);
+        response.setTotalPendingReceivables(Math.round(totalPendingReceivables * 100.0) / 100.0);
+        response.setActiveReceivableCount(activeReceivables.size());
 
         return response;
     }
