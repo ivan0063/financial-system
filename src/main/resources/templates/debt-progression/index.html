@@ -121,12 +121,21 @@
                                         <!-- Section 3: Card payments breakdown -->
                                         <div>
                                             <span class="fw-semibold d-block mb-2">Pagos por tarjeta:</span>
-                                            <table class="table table-sm table-borderless mb-0 bg-white" style="max-width: 400px;">
+                                            <table class="table table-sm table-borderless mb-0 bg-white" style="max-width: 550px;">
+                                                <thead>
+                                                    <tr class="text-muted small">
+                                                        <th>Tarjeta</th>
+                                                        <th class="text-end">Pago mensual</th>
+                                                        <th class="text-end">Restante para terminar</th>
+                                                    </tr>
+                                                </thead>
                                                 <tbody>
                                                     <tr th:each="card : ${entry.cards}">
                                                         <td th:text="${card.accountName}">Tarjeta</td>
                                                         <td class="text-end fw-semibold"
                                                             th:text="${'$' + #numbers.formatDecimal(card.cardPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                                                        <td class="text-end fw-semibold text-primary"
+                                                            th:text="${'$' + #numbers.formatDecimal(card.remainingAmount, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
                                                     </tr>
                                                 </tbody>
                                                 <tfoot class="border-top">
@@ -134,6 +143,8 @@
                                                         <td class="fw-bold">Total</td>
                                                         <td class="text-end fw-bold"
                                                             th:text="${'$' + #numbers.formatDecimal(entry.totalPayment, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                                                        <td class="text-end fw-bold text-primary"
+                                                            th:text="${'$' + #numbers.formatDecimal(entry.totalRemainingAmount(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
                                                     </tr>
                                                 </tfoot>
                                             </table>

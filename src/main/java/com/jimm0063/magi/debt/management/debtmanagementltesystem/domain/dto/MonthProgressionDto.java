@@ -25,4 +25,10 @@ public record MonthProgressionDto(
     public int totalActiveDebtCount() {
         return cards.stream().mapToInt(CardProgressionDto::activeDebtCount).sum();
     }
+
+    public BigDecimal totalRemainingAmount() {
+        return cards.stream()
+                .map(CardProgressionDto::remainingAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 }
