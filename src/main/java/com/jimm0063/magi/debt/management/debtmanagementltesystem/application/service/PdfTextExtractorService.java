@@ -4,6 +4,7 @@ import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.Tesseract;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
@@ -18,17 +19,29 @@ import java.awt.image.BufferedImage;
 public class PdfTextExtractorService {
 
     public String extractText(byte[] pdfBytes) {
+        return extractText(pdfBytes, null);
+    }
+
+    /**
+     * @param password user password for an encrypted PDF, or null/blank if the PDF
+     *                 isn't expected to need one. Throws {@link PdfPasswordRequiredException}
+     *                 when the PDF is encrypted and this password (or the lack of one)
+     *                 doesn't open it.
+     */
+    public String extractText(byte[] pdfBytes, String password) {
         // PDFBox handles owner-restricted PDFs with an empty user password
-        try (PDDocument doc = Loader.loadPDF(pdfBytes)) {
+        try (PDDocument doc = Loader.loadPDF(pdfBytes, password == null ? "" : password)) {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             String text = stripper.getText(doc);
             if (isUsableText(text)) {
                 return text;
             }
+        } catch (InvalidPasswordException e) {
+            throw PdfPasswordExceptions.forAttempt(password);
         } catch (Exception ignored) {}
 
-        return ocrFallback(pdfBytes);
+        return ocrFallback(pdfBytes, password);
     }
 
     /**
@@ -46,9 +59,9 @@ public class PdfTextExtractorService {
         return nonWhitespace > 0 && (double) alphanumeric / nonWhitespace >= 0.30;
     }
 
-    private String ocrFallback(byte[] pdfBytes) {
+    private String ocrFallback(byte[] pdfBytes, String password) {
         StringBuilder sb = new StringBuilder();
-        try (PDDocument doc = Loader.loadPDF(pdfBytes)) {
+        try (PDDocument doc = Loader.loadPDF(pdfBytes, password == null ? "" : password)) {
             PDFRenderer renderer = new PDFRenderer(doc);
             ITesseract tess = new Tesseract();
             tess.setDatapath(resolveTessdata());

@@ -31,8 +31,17 @@
         </div>
     </div>
 
+    <!-- Password-required notice (not a real error — just needs a password re-submit) -->
+    <div class="alert alert-warning mb-3" th:if="${extractionError != null and needsPdfPassword == true}">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-lock-fill fs-5"></i>
+            <span th:text="${extractionError}"></span>
+        </div>
+        <div class="small mt-1">Enter the PDF's password below and re-upload the file.</div>
+    </div>
+
     <!-- Error alert -->
-    <div class="alert alert-danger mb-3" th:if="${extractionError != null}">
+    <div class="alert alert-danger mb-3" th:if="${extractionError != null and needsPdfPassword != true}">
         <div class="d-flex align-items-center gap-2 mb-2">
             <i class="bi bi-exclamation-triangle-fill fs-5"></i>
             <strong>Extraction failed</strong>
@@ -70,11 +79,18 @@
                     <form th:action="@{/ui/v2/statements/{code}/extract(code=${debtAccountCode})}"
                           method="post" enctype="multipart/form-data">
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label fw-semibold">Statement File</label>
                             <input type="file" name="file" class="form-control" required
                                    accept=".pdf,.xlsx,.xls,.csv">
                             <div class="form-text">Accepted formats: PDF, Excel (xlsx / xls), CSV</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">PDF Password <span class="text-muted fw-normal">(optional)</span></label>
+                            <input type="password" name="pdfPassword" class="form-control" autocomplete="off"
+                                   th:classappend="${needsPdfPassword == true} ? 'border-warning' : ''">
+                            <div class="form-text">Only needed if the PDF is encrypted and won't open without one.</div>
                         </div>
 
                         <div class="d-grid">

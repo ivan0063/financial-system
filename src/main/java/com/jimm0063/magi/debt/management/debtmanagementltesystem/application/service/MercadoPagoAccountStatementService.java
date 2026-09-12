@@ -6,6 +6,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.De
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.DebtAccount;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,8 +52,13 @@ public class MercadoPagoAccountStatementService implements AccountStatementDataE
 
     @Override
     public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount) {
+        return extractDebts(accountStatement, debtAccount, null);
+    }
+
+    @Override
+    public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount, String password) {
         List<Debt> debts = new ArrayList<>();
-        try (PDDocument document = Loader.loadPDF(accountStatement.getBytes())) {
+        try (PDDocument document = Loader.loadPDF(accountStatement.getBytes(), password == null ? "" : password)) {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             String text = stripper.getText(document);
@@ -87,6 +93,8 @@ public class MercadoPagoAccountStatementService implements AccountStatementDataE
                 debt.setDebtAccount(debtAccount);
                 debts.add(debt);
             }
+        } catch (InvalidPasswordException e) {
+            throw PdfPasswordExceptions.forAttempt(password);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to extract Mercado Pago debts from PDF", e);
         }

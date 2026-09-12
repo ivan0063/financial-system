@@ -48,13 +48,18 @@ public class StatementDiffPreviewService implements PreviewStatementDiffUseCase 
 
     @Override
     public StatementDiffResult preview(MultipartFile file, String debtAccountCode) throws IOException {
+        return preview(file, debtAccountCode, null);
+    }
+
+    @Override
+    public StatementDiffResult preview(MultipartFile file, String debtAccountCode, String pdfPassword) throws IOException {
         DebtAccount debtAccount = debtAccountRepository
                 .findDebtAccountByCodeAndActiveTrue(debtAccountCode)
                 .orElseThrow(() -> new EntityNotFoundException("DebtAccount " + debtAccountCode));
 
         List<Debt> extractedDebts = statementFactory
                 .getStrategy(debtAccount.getAccountStatementType())
-                .extractDebts(file, debtAccount);
+                .extractDebts(file, debtAccount, pdfPassword);
 
         assignHashes(extractedDebts, debtAccountCode);
 
