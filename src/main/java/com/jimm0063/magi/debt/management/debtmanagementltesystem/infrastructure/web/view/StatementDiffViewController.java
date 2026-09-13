@@ -5,6 +5,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.SyncStatementDiffUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.out.DebtAccountRepository;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.SyncMode;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.PdfPasswordRequiredException;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.StatementDiffResult;
 import jakarta.servlet.http.HttpSession;
@@ -68,16 +69,21 @@ public class StatementDiffViewController {
     public String extract(
             @PathVariable String debtAccountCode,
             @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String pdfPassword,
             HttpSession session,
             RedirectAttributes redirectAttributes) {
         if (session.getAttribute("userEmail") == null) return "redirect:/ui";
         try {
-            StatementDiffResult diff = previewUseCase.preview(file, debtAccountCode);
+            StatementDiffResult diff = previewUseCase.preview(file, debtAccountCode, pdfPassword);
             List<Debt> allExtracted = collectExtractedDebts(diff);
             session.setAttribute(DIFF_KEY, diff);
             session.setAttribute(DEBTS_KEY, allExtracted);
             activityLogHelper.log(session, "Statement diff preview — " + debtAccountCode, diff);
             return "redirect:/ui/v2/statements/" + enc(debtAccountCode) + "/preview";
+        } catch (PdfPasswordRequiredException e) {
+            redirectAttributes.addFlashAttribute("extractionError", e.getMessage());
+            redirectAttributes.addFlashAttribute("needsPdfPassword", true);
+            return "redirect:/ui/v2/statements/" + enc(debtAccountCode);
         } catch (Exception e) {
             logError(session, "Extract ERROR — " + debtAccountCode, e);
             redirectAttributes.addFlashAttribute("extractionError", buildUserMessage(e));

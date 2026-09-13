@@ -4,9 +4,11 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.applicat
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.DebtAccount;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.PdfPasswordRequiredException;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.PalacioMsiRowModel;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -51,9 +53,14 @@ public class PalacioAccountStatementService implements AccountStatementDataExtra
 
     @Override
     public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount) {
+        return extractDebts(accountStatement, debtAccount, null);
+    }
+
+    @Override
+    public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount, String password) {
         try {
             byte[] bytes = accountStatement.getBytes();
-            String text = extractText(bytes);
+            String text = extractText(bytes, password);
 
             LocalDate cutoff = extractCutoffDate(text).orElse(null);
 
@@ -66,16 +73,20 @@ public class PalacioAccountStatementService implements AccountStatementDataExtra
             }
             return debts;
 
+        } catch (PdfPasswordRequiredException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to extract debts from PALACIO statement PDF", e);
         }
     }
 
-    private String extractText(byte[] pdfBytes) throws Exception {
-        try (PDDocument doc = Loader.loadPDF(pdfBytes)) {
+    private String extractText(byte[] pdfBytes, String password) throws Exception {
+        try (PDDocument doc = Loader.loadPDF(pdfBytes, password == null ? "" : password)) {
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             return stripper.getText(doc);
+        } catch (InvalidPasswordException e) {
+            throw PdfPasswordExceptions.forAttempt(password);
         }
     }
 

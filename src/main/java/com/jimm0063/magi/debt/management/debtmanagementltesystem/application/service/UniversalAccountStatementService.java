@@ -7,6 +7,7 @@ import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.De
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.encryption.InvalidPasswordException;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,13 +59,21 @@ public class UniversalAccountStatementService implements AccountStatementDataExt
 
     @Override
     public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount) {
+        return extractDebts(accountStatement, debtAccount, null);
+    }
+
+    @Override
+    public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount, String password) {
         List<Debt> debts = new ArrayList<>();
-        try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(accountStatement.getBytes()))) {
+        try (PDDocument document = Loader.loadPDF(
+                new RandomAccessReadBuffer(accountStatement.getBytes()), password == null ? "" : password)) {
             PDFTextStripper stripper = new PDFTextStripper();
             String text = stripper.getText(document);
 
             debts.addAll(parseAllSinIntereses(text));
             debts.addAll(parseAllConIntereses(text));
+        } catch (InvalidPasswordException e) {
+            throw PdfPasswordExceptions.forAttempt(password);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

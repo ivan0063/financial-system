@@ -21,4 +21,9 @@ public class BbvaAccountStatementService implements AccountStatementDataExtracti
     public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount) {
         return universalService.extractDebts(accountStatement, debtAccount);
     }
+
+    @Override
+    public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount, String password) {
+        return universalService.extractDebts(accountStatement, debtAccount, password);
+    }
 }

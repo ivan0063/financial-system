@@ -2,6 +2,7 @@ package com.jimm0063.magi.debt.management.debtmanagementltesystem.application.se
 
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.application.port.in.AccountStatementDataExtractionUseCase;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.enums.DebtTypeEnum;
+import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.exceptions.PdfPasswordRequiredException;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.Debt;
 import com.jimm0063.magi.debt.management.debtmanagementltesystem.domain.model.DebtAccount;
 import org.springframework.stereotype.Service;
@@ -62,10 +63,17 @@ public class LiverpoolAccountStatementService implements AccountStatementDataExt
 
     @Override
     public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount) {
+        return extractDebts(accountStatement, debtAccount, null);
+    }
+
+    @Override
+    public List<Debt> extractDebts(MultipartFile accountStatement, DebtAccount debtAccount, String password) {
         try {
-            String text = pdfExtractor.extractText(accountStatement.getBytes());
+            String text = pdfExtractor.extractText(accountStatement.getBytes(), password);
             String cutoffDate = extractCutoffDate(text);
             return parseMsiRows(text, cutoffDate, debtAccount);
+        } catch (PdfPasswordRequiredException e) {
+            throw e;
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse Liverpool statement", e);
         }
