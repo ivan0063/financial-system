@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <!-- Shared by the single-statement (v2) and bulk statement previews. -->
+    <style th:fragment="styles">
+        .row-new      { background-color: #d1f2eb !important; }
+        .row-updated  { background-color: #fef9c3 !important; }
+        .row-completed{ background-color: #fde8e8 !important; }
+        .row-unchanged{ background-color: #f8f9fa !important; color: #6c757d; }
+        .row-ignored  { background-color: #e9ecef !important; color: #6c757d; text-decoration: line-through; }
+        .row-missing  { background-color: #ede9fe !important; }
+        .badge-new       { background-color: #198754; }
+        .badge-updated   { background-color: #ffc107; color: #000 !important; }
+        .badge-completed { background-color: #dc3545; }
+        .badge-unchanged { background-color: #6c757d; }
+        .badge-ignored   { background-color: #adb5bd; color: #fff; }
+        .badge-missing   { background-color: #6f42c1; }
+    </style>
+</head>
+<body>
+<table>
+<!--
+    Rows for a statement diff table with 8 columns:
+    Status | Description | Monthly Payment | Installments | Original Amount | Type | Date | (ignore button)
+    The ignore buttons open #ignoreModal; the page wires the modal up.
+-->
+<tbody>
+<th:block th:fragment="rows(diff)">
+                    <!-- NEW debts -->
+                    <tr class="row-new" th:each="entry : ${diff.newDebts()}">
+                        <td><span class="badge badge-new">NEW</span></td>
+                        <td th:text="${entry.extractedDebt.description}"></td>
+                        <td th:text="${'$' + entry.extractedDebt.monthlyPayment}"></td>
+                        <td>
+                            <span th:text="${entry.extractedDebt.currentInstallment}"></span>
+                            <span class="text-muted">/ <span th:text="${entry.extractedDebt.maxFinancingTerm}"></span></span>
+                        </td>
+                        <td th:text="${entry.extractedDebt.originalAmount != null ? '$' + entry.extractedDebt.originalAmount : '—'}"></td>
+                        <td><span class="badge bg-secondary" th:text="${entry.extractedDebt.debtType != null ? entry.extractedDebt.debtType : '—'}"></span></td>
+                        <td th:text="${entry.extractedDebt.operationDate != null ? entry.extractedDebt.operationDate : '—'}"></td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-secondary ignore-btn"
+                                    title="Mark as ignorable"
+                                    th:attr="data-hash=${entry.extractedDebt.hashSum}, data-desc=${entry.extractedDebt.description}"
+                                    data-bs-toggle="modal" data-bs-target="#ignoreModal">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- UPDATED debts -->
+                    <tr class="row-updated" th:each="entry : ${diff.updatedDebts()}">
+                        <td><span class="badge badge-updated">UPDATED</span></td>
+                        <td th:text="${entry.extractedDebt.description}"></td>
+                        <td th:text="${'$' + entry.extractedDebt.monthlyPayment}"></td>
+                        <td>
+                            <span class="text-decoration-line-through text-muted"
+                                  th:text="${entry.existingDebt.currentInstallment}"></span>
+                            <i class="bi bi-arrow-right mx-1 text-muted"></i>
+                            <strong th:text="${entry.extractedDebt.currentInstallment}"></strong>
+                            <span class="text-muted">/ <span th:text="${entry.extractedDebt.maxFinancingTerm}"></span></span>
+                        </td>
+                        <td th:text="${entry.extractedDebt.originalAmount != null ? '$' + entry.extractedDebt.originalAmount : '—'}"></td>
+                        <td><span class="badge bg-secondary" th:text="${entry.extractedDebt.debtType != null ? entry.extractedDebt.debtType : '—'}"></span></td>
+                        <td th:text="${entry.extractedDebt.operationDate != null ? entry.extractedDebt.operationDate : '—'}"></td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-secondary ignore-btn"
+                                    title="Mark as ignorable"
+                                    th:attr="data-hash=${entry.extractedDebt.hashSum}, data-desc=${entry.extractedDebt.description}"
+                                    data-bs-toggle="modal" data-bs-target="#ignoreModal">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- COMPLETED debts -->
+                    <tr class="row-completed" th:each="entry : ${diff.completedDebts()}">
+                        <td>
+                            <span class="badge badge-completed">COMPLETED</span>
+                        </td>
+                        <td th:text="${entry.extractedDebt.description}"></td>
+                        <td th:text="${'$' + entry.extractedDebt.monthlyPayment}"></td>
+                        <td>
+                            <strong th:text="${entry.extractedDebt.currentInstallment}"></strong>
+                            <span class="text-muted">/ <span th:text="${entry.extractedDebt.maxFinancingTerm}"></span></span>
+                            <span class="badge bg-danger ms-1">PAID</span>
+                        </td>
+                        <td th:text="${entry.extractedDebt.originalAmount != null ? '$' + entry.extractedDebt.originalAmount : '—'}"></td>
+                        <td><span class="badge bg-secondary" th:text="${entry.extractedDebt.debtType != null ? entry.extractedDebt.debtType : '—'}"></span></td>
+                        <td th:text="${entry.extractedDebt.operationDate != null ? entry.extractedDebt.operationDate : '—'}"></td>
+                        <td></td>
+                    </tr>
+
+                    <!-- UNCHANGED debts -->
+                    <tr class="row-unchanged" th:each="entry : ${diff.unchangedDebts()}">
+                        <td><span class="badge badge-unchanged">UNCHANGED</span></td>
+                        <td th:text="${entry.extractedDebt.description}"></td>
+                        <td th:text="${'$' + entry.extractedDebt.monthlyPayment}"></td>
+                        <td>
+                            <span th:text="${entry.extractedDebt.currentInstallment}"></span>
+                            <span class="text-muted">/ <span th:text="${entry.extractedDebt.maxFinancingTerm}"></span></span>
+                        </td>
+                        <td th:text="${entry.extractedDebt.originalAmount != null ? '$' + entry.extractedDebt.originalAmount : '—'}"></td>
+                        <td><span class="badge bg-secondary" th:text="${entry.extractedDebt.debtType != null ? entry.extractedDebt.debtType : '—'}"></span></td>
+                        <td th:text="${entry.extractedDebt.operationDate != null ? entry.extractedDebt.operationDate : '—'}"></td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-secondary ignore-btn"
+                                    title="Mark as ignorable"
+                                    th:attr="data-hash=${entry.extractedDebt.hashSum}, data-desc=${entry.extractedDebt.description}"
+                                    data-bs-toggle="modal" data-bs-target="#ignoreModal">
+                                <i class="bi bi-eye-slash"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- IGNORED debts — divider row -->
+                    <tr class="table-secondary" th:if="${!diff.ignoredDebts().isEmpty()}">
+                        <td colspan="8" class="py-1 small fw-semibold text-muted">
+                            <i class="bi bi-eye-slash me-1"></i>Ignored — will not be processed
+                        </td>
+                    </tr>
+
+                    <!-- IGNORED debts -->
+                    <tr class="row-ignored" th:each="entry : ${diff.ignoredDebts()}">
+                        <td><span class="badge badge-ignored">IGNORED</span></td>
+                        <td th:text="${entry.extractedDebt.description}"></td>
+                        <td th:text="${'$' + entry.extractedDebt.monthlyPayment}"></td>
+                        <td>
+                            <span th:text="${entry.extractedDebt.currentInstallment}"></span>
+                            <span class="text-muted">/ <span th:text="${entry.extractedDebt.maxFinancingTerm}"></span></span>
+                        </td>
+                        <td th:text="${entry.extractedDebt.originalAmount != null ? '$' + entry.extractedDebt.originalAmount : '—'}"></td>
+                        <td><span class="badge bg-secondary" th:text="${entry.extractedDebt.debtType != null ? entry.extractedDebt.debtType : '—'}"></span></td>
+                        <td th:text="${entry.extractedDebt.operationDate != null ? entry.extractedDebt.operationDate : '—'}"></td>
+                        <td class="text-center">
+                            <small class="text-muted fst-italic" th:text="${entry.ignoreReason != null ? entry.ignoreReason : ''}"></small>
+                        </td>
+                    </tr>
+</th:block>
+</tbody>
+</table>
+</body>
+</html>

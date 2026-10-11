@@ -23,9 +23,13 @@ spring:
   servlet:
     multipart:
       max-file-size: 50MB
-      max-request-size: 50MB
+      # Bulk statement import sends several statements in one request.
+      max-request-size: 300MB
 server:
   port: 666
+  tomcat:
+    # Each bulk-import file adds ~3 multipart parts (file, card, password); Tomcat's default is 50.
+    max-part-count: 500
 
 app:
   default-user-email: ${APP_DEFAULT_USER_EMAIL:jimm0063@icloud.com}

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bulk Statement Import – Financial Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        #dropZone { border: 2px dashed #adb5bd; border-radius: .5rem; cursor: pointer; transition: background-color .15s; }
+        #dropZone.dragover { background-color: #e7f1ff; border-color: #0d6efd; }
+        .mode-option { cursor: pointer; }
+        .mode-option input:checked + .card { border-color: #0d6efd; box-shadow: 0 0 0 .2rem rgba(13,110,253,.25); }
+        #busyOverlay { position: fixed; inset: 0; background: rgba(255,255,255,.85); z-index: 2000;
+                       display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #busyOverlay[hidden] { display: none; }
+    </style>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{layout/navbar :: navbar}"></div>
+
+<div class="container py-2">
+
+    <!-- Header -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">
+                <i class="bi bi-files me-2 text-primary"></i>Bulk Statement Import
+            </h2>
+            <small class="text-muted">
+                Load several account statements at once, associate each file with its card, review the changes and persist them together.
+            </small>
+        </div>
+        <a th:if="${hasPendingBatch}" th:href="@{/ui/bulk-statements/preview}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-right-circle me-1"></i>Resume pending review
+        </a>
+    </div>
+
+    <div class="alert alert-danger" th:if="${uploadError != null}">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i><span th:text="${uploadError}"></span>
+    </div>
+
+    <div class="alert alert-warning" th:if="${accountsByProvider.isEmpty()}">
+        <i class="bi bi-info-circle me-1"></i>You don't have any active cards yet.
+        <a th:href="@{/ui/providers}">Create a provider and a card</a> first.
+    </div>
+
+    <!-- Card options, cloned into every row's selector -->
+    <template id="cardOptions">
+        <option value="">— Select card —</option>
+        <optgroup th:each="group : ${accountsByProvider}" th:label="${group.key}">
+            <option th:each="acc : ${group.value}"
+                    th:value="${acc.code}"
+                    th:attr="data-name=${acc.name}, data-provider=${group.key}"
+                    th:text="${acc.name + ' · ' + acc.accountStatementType}"></option>
+        </optgroup>
+    </template>
+
+    <form id="bulkForm" th:action="@{/ui/bulk-statements/extract}" method="post" enctype="multipart/form-data">
+
+        <!-- Step 1: files -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-semibold"><span class="badge bg-primary me-2">1</span>Statement files</h5>
+            </div>
+            <div class="card-body">
+                <div id="dropZone" class="p-4 text-center text-muted mb-3">
+                    <i class="bi bi-cloud-arrow-up fs-1 d-block"></i>
+                    Drop PDF / Excel / CSV statements here, or <span class="text-primary text-decoration-underline">browse</span>
+                    <div class="small">You can add files in several rounds.</div>
+                    <input type="file" id="filePicker" multiple accept=".pdf,.xlsx,.xls,.csv" class="d-none">
+                </div>
+
+                <div id="emptyState" class="text-center text-muted small py-2">No files added yet.</div>
+
+                <div class="table-responsive" id="filesTableWrap" hidden>
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>File</th>
+                            <th style="min-width: 280px">Card</th>
+                            <th style="width: 200px">PDF password <span class="fw-normal text-muted">(optional)</span></th>
+                            <th style="width: 50px"></th>
+                        </tr>
+                        </thead>
+                        <tbody id="filesBody"></tbody>
+                    </table>
+                </div>
+                <div id="dupWarning" class="alert alert-warning small mt-3 mb-0" hidden>
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    The same card is selected for more than one file. Only one statement per card can be imported in a batch.
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: default mode -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0 fw-semibold"><span class="badge bg-primary me-2">2</span>How should the cards be updated?</h5>
+                <small class="text-muted">This is the default for every card — you can still change it per card on the review screen.</small>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <label class="col-md-6 mode-option">
+                        <input type="radio" name="defaultAction" value="UPDATE" class="d-none" checked>
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold"><i class="bi bi-arrow-repeat me-1 text-primary"></i>Only update</h6>
+                                <p class="small text-muted mb-0">
+                                    Add new debts, advance installments and close debts that reached N/N.
+                                    Debts in the system that are not in the statement are left untouched.
+                                </p>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="col-md-6 mode-option">
+                        <input type="radio" name="defaultAction" value="SOURCE_OF_TRUTH" class="d-none">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold"><i class="bi bi-database-fill-exclamation me-1 text-danger"></i>Statement is the source of truth</h6>
+                                <p class="small text-muted mb-0">
+                                    Rebuild each card from 0: deactivate all of its current debts and insert exactly what the statement shows.
+                                </p>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden per-row fields are generated here on submit -->
+        <div id="hiddenFields" hidden></div>
+
+        <div class="d-flex justify-content-end gap-3 mb-5">
+            <span id="submitHint" class="align-self-center small text-muted"></span>
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-lg" disabled>
+                <i class="bi bi-play-circle me-1"></i>Proceed — extract &amp; review
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Busy overlay while the server extracts all files -->
+<div id="busyOverlay" hidden>
+    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+    <div class="fw-semibold" id="busyText">Extracting statements…</div>
+    <div class="small text-muted">Scanned (OCR) statements can take a while.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script th:inline="none">
+(function () {
+    var rows = [];   // { file, code, password, auto }
+    var picker = document.getElementById('filePicker');
+    var dropZone = document.getElementById('dropZone');
+    var body = document.getElementById('filesBody');
+    var optionsTpl = document.getElementById('cardOptions');
+
+    // Accounts available for auto-matching, read from the option template
+    var accounts = Array.prototype.map.call(optionsTpl.content.querySelectorAll('option[value]:not([value=""])'), function (o) {
+        return { code: o.value, name: o.getAttribute('data-name') || '', provider: o.getAttribute('data-provider') || '' };
+    });
+
+    function normalize(s) {
+        return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    }
+    function tokens(s) {
+        return normalize(s).split(' ').filter(function (t) { return t.length >= 3; });
+    }
+
+    // Best-effort guess of the card from the file name: card-name tokens weigh more than provider tokens.
+    function guessCard(fileName) {
+        var name = ' ' + normalize(fileName) + ' ';
+        var best = null, bestScore = 0, tie = false;
+        accounts.forEach(function (acc) {
+            var score = 0;
+            tokens(acc.name).forEach(function (t) { if (name.indexOf(t) >= 0) score += 2; });
+            tokens(acc.provider).forEach(function (t) { if (name.indexOf(t) >= 0) score += 1; });
+            if (score > bestScore) { best = acc; bestScore = score; tie = false; }
+            else if (score > 0 && score === bestScore) { tie = true; }
+        });
+        return best && !tie ? best.code : '';
+    }
+
+    function addFiles(fileList) {
+        Array.prototype.forEach.call(fileList, function (f) {
+            var already = rows.some(function (r) { return r.file.name === f.name && r.file.size === f.size; });
+            if (already) return;
+            var code = guessCard(f.name);
+            rows.push({ file: f, code: code, password: '', auto: !!code });
+        });
+        render();
+    }
+
+    function render() {
+        body.innerHTML = '';
+        rows.forEach(function (row, i) {
+            var tr = document.createElement('tr');
+
+            var tdName = document.createElement('td');
+            tdName.innerHTML = '<i class="bi bi-file-earmark-text me-1 text-muted"></i>';
+            var nameSpan = document.createElement('span');
+            nameSpan.textContent = row.file.name;
+            var size = document.createElement('small');
+            size.className = 'text-muted ms-2';
+            size.textContent = Math.max(1, Math.round(row.file.size / 1024)) + ' KB';
+            tdName.appendChild(nameSpan);
+            tdName.appendChild(size);
+
+            var tdCard = document.createElement('td');
+            var sel = document.createElement('select');
+            sel.className = 'form-select form-select-sm';
+            sel.appendChild(optionsTpl.content.cloneNode(true));
+            sel.value = row.code;
+            sel.addEventListener('change', function () { row.code = sel.value; row.auto = false; render(); });
+            tdCard.appendChild(sel);
+            if (row.auto) {
+                var hint = document.createElement('div');
+                hint.className = 'form-text';
+                hint.innerHTML = '<i class="bi bi-magic me-1"></i>Guessed from the file name — please double-check.';
+                tdCard.appendChild(hint);
+            }
+
+            var tdPwd = document.createElement('td');
+            var pwd = document.createElement('input');
+            pwd.type = 'password';
+            pwd.autocomplete = 'off';
+            pwd.className = 'form-control form-control-sm';
+            pwd.value = row.password;
+            pwd.addEventListener('input', function () { row.password = pwd.value; });
+            tdPwd.appendChild(pwd);
+
+            var tdDel = document.createElement('td');
+            var del = document.createElement('button');
+            del.type = 'button';
+            del.className = 'btn btn-sm btn-outline-danger';
+            del.title = 'Remove file';
+            del.innerHTML = '<i class="bi bi-trash"></i>';
+            del.addEventListener('click', function () { rows.splice(i, 1); render(); });
+            tdDel.appendChild(del);
+
+            tr.appendChild(tdName); tr.appendChild(tdCard); tr.appendChild(tdPwd); tr.appendChild(tdDel);
+            body.appendChild(tr);
+        });
+        validate();
+    }
+
+    function validate() {
+        var counts = {};
+        rows.forEach(function (r) { if (r.code) counts[r.code] = (counts[r.code] || 0) + 1; });
+        var hasDup = false;
+        Array.prototype.forEach.call(body.querySelectorAll('select'), function (sel, i) {
+            var dup = rows[i].code && counts[rows[i].code] > 1;
+            sel.classList.toggle('is-invalid', !!dup);
+            if (dup) hasDup = true;
+        });
+        var missing = rows.filter(function (r) { return !r.code; }).length;
+
+        document.getElementById('emptyState').hidden = rows.length > 0;
+        document.getElementById('filesTableWrap').hidden = rows.length === 0;
+        document.getElementById('dupWarning').hidden = !hasDup;
+
+        var hint = '';
+        if (rows.length === 0) hint = 'Add at least one statement.';
+        else if (missing > 0) hint = missing + ' file(s) still need a card.';
+        else if (hasDup) hint = 'Fix the duplicated card selection.';
+        else hint = rows.length + ' statement(s) ready.';
+        document.getElementById('submitHint').textContent = hint;
+        document.getElementById('submitBtn').disabled = rows.length === 0 || missing > 0 || hasDup;
+    }
+
+    dropZone.addEventListener('click', function () { picker.click(); });
+    picker.addEventListener('change', function () { addFiles(picker.files); picker.value = ''; });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+        dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+        dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.remove('dragover'); });
+    });
+    dropZone.addEventListener('drop', function (e) { addFiles(e.dataTransfer.files); });
+
+    // Build one indexed file input + hidden fields per row so Spring binds them to rows[i].*
+    document.getElementById('bulkForm').addEventListener('submit', function (e) {
+        validate();
+        if (document.getElementById('submitBtn').disabled) { e.preventDefault(); return; }
+        var hidden = document.getElementById('hiddenFields');
+        hidden.innerHTML = '';
+        rows.forEach(function (row, i) {
+            var fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.name = 'rows[' + i + '].file';
+            var dt = new DataTransfer();
+            dt.items.add(row.file);
+            fileInput.files = dt.files;
+            hidden.appendChild(fileInput);
+
+            [['debtAccountCode', row.code], ['pdfPassword', row.password]].forEach(function (pair) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'rows[' + i + '].' + pair[0];
+                input.value = pair[1];
+                hidden.appendChild(input);
+            });
+        });
+        document.getElementById('busyText').textContent = 'Extracting ' + rows.length + ' statement(s)…';
+        document.getElementById('busyOverlay').hidden = false;
+    });
+
+    render();
+})();
+</script>
+</body>
+</html>
