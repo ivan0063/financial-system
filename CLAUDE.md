@@ -236,7 +236,24 @@ GET    /ui/statements        Statement upload interface
 GET    /ui/payments          Payment history
 GET    /ui/providers         Provider management
 GET    /ui/receivables       Money lent out (e.g. to relatives) + repayment tracking
+GET    /ui/bulk-statements   Bulk statement import (many files → many cards, see below)
 ```
+
+### Bulk Statement Import (Web UI)
+```
+GET    /ui/bulk-statements                         Pick files, associate each with a card, choose default mode
+POST   /ui/bulk-statements/extract                 Extract + diff every file (no DB writes); batch kept in session
+GET    /ui/bulk-statements/preview                 Review per-card diff (new / updated / completed / not in statement)
+POST   /ui/bulk-statements/items/{i}/action        Per-card action: UPDATE | SOURCE_OF_TRUTH ("rebuild from 0") | SKIP
+POST   /ui/bulk-statements/action-all              Same action for every successfully extracted card
+POST   /ui/bulk-statements/items/{i}/mark-ignorable Mark a debt ignorable and recompute that card
+POST   /ui/bulk-statements/items/{i}/retry         Re-upload a failed file (e.g. with PDF password)
+POST   /ui/bulk-statements/execute                 Persist all cards in ONE transaction (all-or-nothing)
+POST   /ui/bulk-statements/cancel                  Discard the pending batch
+```
+Each file uses the parser linked to its card (`DebtAccount.accountStatementType`) and the same diff/sync
+logic as the single-statement v2 flow (`StatementDiffPreviewService` / `StatementDiffSyncService`).
+Only one file per card per batch. A file that fails to extract never blocks the others.
 
 ### API Documentation
 ```
@@ -385,7 +402,8 @@ Do not add authentication unless explicitly requested.
 
 Configured in `application.yml`:
 - Max file size: **50MB**
-- Max request size: **50MB**
+- Max request size: **300MB** (bulk statement import sends several files in one request)
+- Tomcat `max-part-count`: **500** (each bulk file adds ~3 multipart parts)
 
 These exist to support large PDF/Excel statement files from financial institutions.
 
@@ -412,6 +430,7 @@ The Tesseract installation in Docker is required for `LIVERPOOL` statement parsi
 | `application/service/DebtService.java` | Core debt operations + deduplication |
 | `application/service/FinancialStatusService.java` | Dashboard aggregation |
 | `application/service/PaymentService.java` | Payment recording + installment increment |
+| `application/service/BulkStatementService.java` | Bulk statement import: per-file extraction/diff + single-transaction sync |
 | `application/service/ReceivableService.java` | Money lent out: pending-balance calculation, auto open/close on repayment |
 | `infrastructure/web/AccountStatementController.java` | Statement extraction endpoints |
 | `domain/utils/DebtComparatorUtil.java` | Diff logic: new vs. existing debts |
