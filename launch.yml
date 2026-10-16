@@ -1,0 +1,29 @@
+# launch.yml - financial-system
+profile: spring-boot
+
+# The runtime image needs Tesseract OCR with Spanish data for statement
+# parsing, so the repo's own Dockerfile is used instead of the generic one.
+containerfile: Dockerfile
+
+app: financial-system
+
+# Defaults
+port: 666
+host: finance                    # finance.lab.home.arpa once local DNS exists
+env:
+  TZ: America/Mexico_City
+
+environments:
+
+  preview:
+    # Isolated database: dbo_preview on melchior, empty and separate from dbo.
+    # A preview never touches prod data.
+    secrets:
+      - path: preview/financial-system
+        format: env
+
+  prod:
+    branches: [main]
+    secrets:
+      - path: prod/financial-system
+        format: env
