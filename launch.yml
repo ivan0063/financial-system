@@ -1,17 +1,19 @@
 # launch.yml - financial-system
 profile: spring-boot
 
-# The runtime image needs Tesseract OCR with Spanish data for statement
-# parsing, so the repo's own Dockerfile is used instead of the generic one.
-containerfile: Dockerfile
-
 app: financial-system
+
+# Statement parsing needs Tesseract OCR with Spanish language data. Declared
+# here so the repo carries no build definition of its own.
+packages: [tesseract-ocr, tesseract-ocr-spa]
 
 # Defaults
 port: 666
 host: finance                    # finance.lab.home.arpa once local DNS exists
 env:
   TZ: America/Mexico_City
+  # Where the tesseract-ocr package puts its language data on Debian.
+  TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
 
 environments:
 
