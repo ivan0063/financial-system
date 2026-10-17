@@ -10,3 +10,10 @@ packages: [tesseract-ocr, tesseract-ocr-spa]
 env:
   # Where the tesseract-ocr package puts its language data on Debian.
   TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
+  # The UI logs this user in automatically; the code default is an address
+  # that has no account in the database.
+  APP_DEFAULT_USER_EMAIL: jimm0063@gmail.com
+
+environments:
+  prod:
+    node-port: 30666             # fixed, so the UI address can be bookmarked
