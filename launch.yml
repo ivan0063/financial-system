@@ -16,4 +16,4 @@ env:
 
 environments:
   prod:
-    node-port: 30666             # fixed, so the UI address can be bookmarked
+    host-port: 666               # balthazar.local:666, the address it always had
