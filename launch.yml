@@ -1,31 +1,12 @@
 # launch.yml - financial-system
+# Only what differs from the pipeline convention: app name, TZ, prod from main
+# and OpenBao secrets at <environment>/financial-system.
 profile: spring-boot
-
-app: financial-system
-
-# Statement parsing needs Tesseract OCR with Spanish language data. Declared
-# here so the repo carries no build definition of its own.
-packages: [tesseract-ocr, tesseract-ocr-spa]
-
-# Defaults
 port: 666
 host: finance                    # finance.lab.home.arpa once local DNS exists
+
+# Statement parsing needs Tesseract OCR with Spanish language data.
+packages: [tesseract-ocr, tesseract-ocr-spa]
 env:
-  TZ: America/Mexico_City
   # Where the tesseract-ocr package puts its language data on Debian.
   TESSDATA_PREFIX: /usr/share/tesseract-ocr/5/tessdata
-
-environments:
-
-  preview:
-    # Isolated database: dbo_preview on melchior, empty and separate from dbo.
-    # A preview never touches prod data.
-    secrets:
-      - path: preview/financial-system
-        format: env
-
-  prod:
-    branches: [main]
-    secrets:
-      - path: prod/financial-system
-        format: env
